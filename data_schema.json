@@ -1,0 +1,90 @@
+{
+  "GIVENNAME": {
+    "examples": ["Arun", "Ravi", "Neha"],
+    "regex": "^[A-Z][a-z]{1,20}$"
+  },
+  "SURNAME": {
+    "examples": ["Sharma", "Verma", "Singh"],
+    "regex": "^[A-Z][a-z]{1,20}$"
+  },
+  "FULLNAME": {
+    "examples": ["Arun Sharma", "Ravi Kumar", "Neha Mehta"],
+    "regex": "^[A-Z][a-zA-Z]+( [A-Z][a-zA-Z]+)+$"
+  },
+  "TELEPHONENUM": {
+    "examples": ["+91-9876543210", "+91 9876543210", "09876543210", "9876543210"],
+    "regex": "^(\\+91[-\\s]?|0)?[6789]\\d{9}$"
+  },
+  "EMAIL": {
+    "examples": ["deepak@hdfc.com", "user.name@domain.co.in"],
+    "regex": "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
+  },
+  "CITY": {
+    "examples": ["Mumbai", "New Delhi", "Bangalore"],
+    "regex": "^[A-Za-z\\s]+$"
+  },
+  "BUILDINGNUM": {
+    "examples": ["12", "408", "9999"],
+    "regex": "^\\d{1,4}$"
+  },
+  "STREET": {
+    "examples": ["Brigade Road", "MG Road", "Park Avenue"],
+    "regex": ".*"
+  },
+  "ZIPCODE": {
+    "examples": ["110001", "560001"],
+    "regex": "^\\d{6}$"
+  },
+  "DATE": {
+    "examples": ["04/08/2024", "04-08-2024"],
+    "regex": "^\\d{2}[-/]\\d{2}[-/]\\d{4}$"
+  },
+  "TIME": {
+    "examples": ["12:25", "12:25:49"],
+    "regex": "^\\d{2}:\\d{2}(:\\d{2})?$"
+  },
+  "AGE": {
+    "examples": ["28", "50", "99"],
+    "regex": "^\\d{1,3}$"
+  },
+  "AADHAAR": {
+    "examples": ["1234 5678 9012"],
+    "regex": "^\\d{4}\\s\\d{4}\\s\\d{4}$"
+  },
+  "PAN": {
+    "examples": ["AAAPA1234A", "XYZPT5678K"],
+    "regex": "^[A-Z]{3}[PFCHAT][A-Z]\\d{4}[A-Z]$"
+  },
+  "VOTERID": {
+    "examples": ["ABC1234567"],
+    "regex": "^[A-Z]{3}\\d{7}$"
+  },
+  "DRIVERLICENSENUM": {
+    "examples": ["MH-14-2011-0062821", "MH12 2012 1234567"],
+    "regex": "^[A-Z]{2}[-\\s]?\\d{2}[-\\s]?\\d{4}[-\\s]?\\d{7}$"
+  },
+  "ACCOUNTNUM": {
+    "examples": ["123456789", "001234567890123456"],
+    "regex": "^\\d{9,18}$"
+  },
+  "IFSC": {
+    "examples": ["HDFC0001234", "SBIN0004567"],
+    "regex": "^[A-Z]{4}0[A-Z0-9]{6}$"
+  },
+  "CREDITCARDNUM": {
+    "examples": ["4111 1111 1111 1111"],
+    "regex": "^\\d{4}\\s\\d{4}\\s\\d{4}\\s\\d{4}$"
+  },
+  "TRANSACTIONID": {
+    "examples": ["f47ac10b-58cc-4372-a567-0e02b2c3d479"],
+    "regex": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+  },
+  "GENDER": {
+    "examples": ["M", "F", "Male", "Female"],
+    "regex": "^(M|F|Male|Female)$"
+  },
+  "PASSPORTNUM": {
+    "examples": ["K1234567", "Z7654321"],
+    "regex": "^[A-Z]\\d{7}$"
+  }
+}

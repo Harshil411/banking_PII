@@ -1,0 +1,104 @@
+PII Data Schema Description
+
+1. GIVENNAME
+   - First name; capitalized with 1-20 lowercase letters.
+   - Examples: Arun, Neha, Ravi
+   - Regex: ^[A-Z][a-z]{1,20}$
+
+2. SURNAME
+   - Last name; same format as GIVENNAME.
+   - Examples: Sharma, Verma, Singh
+   - Regex: ^[A-Z][a-z]{1,20}$
+
+3. FULLNAME
+   - Full name with two or more capitalized words separated by space.
+   - Examples: Arun Sharma, Neha Mehta
+   - Regex: ^[A-Z][a-zA-Z]+( [A-Z][a-zA-Z]+)+$
+
+4. TELEPHONENUM
+   - Indian phone numbers in multiple formats:
+     +91-9876543210, +91 9876543210, 09876543210, 9876543210
+   - Regex accounts for optional country code (+91), optional leading zero, and starts with 6-9 digit.
+
+5. EMAIL
+   - Typical email formats.
+   - Examples: deepak@hdfc.com, user.name@domain.co.in
+
+6. CITY
+   - Alphabetic city names.
+   - Examples: Mumbai, New Delhi
+
+7. BUILDINGNUM
+   - Numeric building or house numbers, 1 to 4 digits.
+
+8. STREET
+   - Free text street names.
+
+9. ZIPCODE
+   - Indian 6-digit postal codes.
+   - Examples: 110001, 560001
+
+10. DATE
+    - Supports dd/mm/yyyy and dd-mm-yyyy.
+    - Examples: 04/08/2024, 04-08-2024
+
+11. TIME
+    - Supports HH:mm and HH:mm:ss.
+    - Examples: 12:25, 12:25:49
+
+12. AGE
+    - Numeric age 1-3 digits.
+    - Examples: 28, 99
+
+13. AADHAAR
+    - Indian Aadhaar number: 12 digits in groups of 4 separated by spaces.
+    - Example: 1234 5678 9012
+
+14. PAN
+    - Permanent Account Number with 10 characters:
+      - First 3 letters: alphabetic series (AAA-ZZZ)
+      - 4th letter: Entity type (P, F, C, H, A, T)
+      - 5th letter: First letter of surname
+      - Next 4 digits: sequential number 0001-9999
+      - Last letter: checksum alphabet
+    - Examples: AAAPA1234A, XYZPT5678K
+
+15. VOTERID
+    - Indian Voter ID: 3 letters followed by 7 digits.
+    - Example: ABC1234567
+
+16. DRIVERLICENSENUM
+    - Indian Driving License Number, typically:
+      SS-RR-YYYY-NNNNNNN or SS RR YYYY NNNNNNN
+      - SS: State code (2 letters)
+      - RR: RTO code (2 digits)
+      - YYYY: Year issued (4 digits)
+      - NNNNNNN: Unique number (7 digits)
+    - Examples: MH-14-2011-0062821, MH12 2012 1234567
+
+17. ACCOUNTNUM
+    - Bank Account Number, 9-18 digits.
+    - Can vary by bank and system.
+    - Examples: 123456789, 001234567890123456
+
+18. IFSC
+    - Indian Financial System Code:
+      - 4 letters for bank
+      - 0 separator
+      - 6 alphanumeric branch code
+    - Examples: HDFC0001234, SBIN0004567
+
+19. CREDITCARDNUM
+    - 16-digit card number formatted as four groups of four digits.
+    - Example: 4111 1111 1111 1111
+
+20. TRANSACTIONID
+    - UUID v1-v5 format used for unique transaction references.
+    - Example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+
+21. GENDER
+    - Gender values M, F, Male, Female only.
+
+22. PASSPORTNUM
+    - Indian Passport Number: 1 uppercase letter followed by 7 digits.
+    - Examples: K1234567, Z7654321

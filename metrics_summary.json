@@ -1,0 +1,157 @@
+{
+  "precision": 0.8010530487459662,
+  "recall": 0.8838429584283349,
+  "f1": 0.8404139999703013,
+  "per_class": {
+    "AADHAAR": {
+      "precision": 0.9529520295202952,
+      "recall": 1.0,
+      "f1-score": 0.975909305621162,
+      "support": 1033
+    },
+    "ACCOUNTNUM": {
+      "precision": 0.7629955947136564,
+      "recall": 0.9848369977255497,
+      "f1-score": 0.859837828892934,
+      "support": 2638
+    },
+    "AGE": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 716
+    },
+    "BUILDINGNUM": {
+      "precision": 0.5659574468085107,
+      "recall": 1.0,
+      "f1-score": 0.7228260869565217,
+      "support": 266
+    },
+    "CITY": {
+      "precision": 0.9685138539042821,
+      "recall": 0.9270644966847499,
+      "f1-score": 0.9473360024638128,
+      "support": 1659
+    },
+    "CREDITCARDNUM": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 2129
+    },
+    "DATE": {
+      "precision": 0.9991674991674991,
+      "recall": 1.0,
+      "f1-score": 0.9995835762471891,
+      "support": 6001
+    },
+    "DRIVERLICENSENUM": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 2120
+    },
+    "EMAIL": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 1512
+    },
+    "FULLNAME": {
+      "precision": 0.28004956629491945,
+      "recall": 0.16,
+      "f1-score": 0.20364947060148686,
+      "support": 2825
+    },
+    "GENDER": {
+      "precision": 0.8556485355648535,
+      "recall": 0.7779362815026153,
+      "f1-score": 0.8149439601494396,
+      "support": 2103
+    },
+    "GIVENNAME": {
+      "precision": 0.1598571995239984,
+      "recall": 1.0,
+      "f1-score": 0.2756497948016416,
+      "support": 403
+    },
+    "IFSC": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 970
+    },
+    "PAN": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 942
+    },
+    "PASSPORTNUM": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 0
+    },
+    "STREET": {
+      "precision": 0.9925373134328358,
+      "recall": 1.0,
+      "f1-score": 0.9962546816479401,
+      "support": 266
+    },
+    "SURNAME": {
+      "precision": 0.04055299539170507,
+      "recall": 1.0,
+      "f1-score": 0.0779450841452613,
+      "support": 88
+    },
+    "TELEPHONENUM": {
+      "precision": 0.8980263157894737,
+      "recall": 0.9895786135024921,
+      "f1-score": 0.9415822375511965,
+      "support": 2207
+    },
+    "TIME": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 424
+    },
+    "TRANSACTIONID": {
+      "precision": 0.9985601151907847,
+      "recall": 0.9992795389048992,
+      "f1-score": 0.9989196975153043,
+      "support": 1388
+    },
+    "VOTERID": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 686
+    },
+    "ZIPCODE": {
+      "precision": 0.9978925184404637,
+      "recall": 0.5770871419865935,
+      "f1-score": 0.7312741312741312,
+      "support": 1641
+    },
+    "micro avg": {
+      "precision": 0.8010530487459662,
+      "recall": 0.8838429584283349,
+      "f1-score": 0.8404139999703013,
+      "support": 32017
+    },
+    "macro avg": {
+      "precision": 0.7942141356246943,
+      "recall": 0.8825355941048589,
+      "f1-score": 0.7975323571758192,
+      "support": 32017
+    },
+    "weighted avg": {
+      "precision": 0.8800811203228381,
+      "recall": 0.8838429584283349,
+      "f1-score": 0.8706140420440002,
+      "support": 32017
+    }
+  }
+}

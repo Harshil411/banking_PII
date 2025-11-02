@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Banking PII Protection</title>
+	<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+	<header>
+		<h1>Banking PII Protection</h1>
+		<p>Use BERT to extract PII and LLaMA to anonymize text.</p>
+	</header>
+
+	<main>
+		<section class="panel">
+			<h2>BERT: Extract PII entities</h2>
+			<div class="form-grid">
+				<label for="bert-text">Customer Message / Details</label>
+				<textarea id="bert-text" placeholder="Type text containing PII (names, IBAN, phone, etc.)"></textarea>
+				<button id="bert-run">Extract PII</button>
+			</div>
+			<pre id="bert-output" class="output"></pre>
+		</section>
+
+		<section class="panel">
+			<h2>LLaMA: Anonymize PII</h2>
+			<div class="form-grid">
+				<label for="llama-text">Transaction Narrative</label>
+				<textarea id="llama-text" placeholder="e.g., Send $500 to John Doe, account 123456..."></textarea>
+				<label for="replacement">Replacement Token</label>
+				<input id="replacement" value="[REDACTED]" />
+				<button id="llama-run">Anonymize</button>
+			</div>
+			<pre id="llama-output" class="output"></pre>
+		</section>
+
+		<section class="panel">
+			<h2>Metrics</h2>
+			<pre id="metrics" class="output small"></pre>
+		</section>
+
+		<section class="panel">
+			<h2>Data Schema</h2>
+			<pre id="schema" class="output small"></pre>
+		</section>
+	</main>
+
+	<footer>
+		<span>Backend: FastAPI • Models: Local HF directories</span>
+	</footer>
+
+	<script src="/app.js"></script>
+</body>
+</html>
