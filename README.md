@@ -13,7 +13,7 @@ The React UI provides two separate panels, one for each model, plus metrics and 
 - Node.js 16+
 - Internet not required at runtime (models are local). First install may download Python wheels.
 
-## Backend Setup (Python)
+## Backend Setup which is in Python.
 
 ### 1. Create and activate virtual environment
 
