@@ -1,94 +1,91 @@
-# Banking PII Protection (FastAPI + React + Local HF Models)
+# Banking PII Detection & Anonymization
 
-This app serves two local Hugging Face models with a modern React frontend:
+**Local-first privacy service for banking text** — detects and anonymizes personally identifiable information (PII) using two Hugging Face token-classification models running entirely on your own machine. No data ever leaves the device.
 
-- `bert-base-multilingual-cased_100k_v1`: extract PII entities
-- `llama-ai4privacy-multilingual-categorical-anonymiser-openpii_100k_v1`: anonymize PII in text
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?style=flat-square&logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-frontend-61DAFB?style=flat-square&logo=react&logoColor=black)
+![Hugging Face](https://img.shields.io/badge/Hugging%20Face-local%20models-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
 
-The React UI provides two separate panels, one for each model, plus metrics and data schema display.
+## Results
 
-## Prerequisites
+Evaluated on **32,017 labeled entities** across 25 PII classes ([`metrics_summary.json`](metrics_summary.json)):
 
-- Python 3.10+
-- Node.js 16+
-- Internet not required at runtime (models are local). First install may download Python wheels.
+| Metric | Score |
+|---|---|
+| **Micro-F1 (overall)** | **0.840** |
+| Precision | 0.801 |
+| Recall | 0.884 |
+| F1 — regulated identifiers (PAN, IFSC, credit card, driver's license, email) | **1.00** |
+| F1 — Aadhaar | 0.976 |
 
-## Backend Setup which is in Python.
+High recall on regulated identifiers is the design goal: in a privacy pipeline, a missed entity costs far more than a false positive.
 
-### 1. Create and activate virtual environment
+## How it works
 
-```powershell
-cd "C:\Users\rahil\OneDrive\Desktop\models"
+```
+Banking text ──▶ PII extraction (token classification)
+             ──▶ Schema cross-validation (regex + format rules per entity type)
+             ──▶ Anonymized output
+```
+
+- **Extraction model** — `bert-base-multilingual-cased_100k_v1`: fine-tuned multilingual BERT for PII token classification
+- **Anonymization model** — `llama-ai4privacy-multilingual-categorical-anonymiser-openpii_100k_v1`: category-aware PII replacement
+- **Schema validation** — every detected entity is cross-checked against format rules in [`data_schema.json`](data_schema.json) (Aadhaar, PAN, IFSC, account numbers, credit cards, phone numbers, transaction IDs), making each detection inspectable and reducing false positives
+- **React UI** — separate panels for extraction and anonymization, live metrics, and schema display
+
+## Quick start
+
+**Prerequisites:** Python 3.10+, Node.js 16+. Internet is only needed for the first install — models run locally at runtime. GPU is used if available (`torch.cuda.is_available()`), otherwise CPU.
+
+### Backend
+
+```bash
 python -m venv .venv
-. .venv\Scripts\Activate.ps1
-```
-
-### 2. Install Python dependencies
-
-```powershell
-pip install -r backend\requirements.txt
-```
-
-### 3. Run Python backend
-
-```powershell
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r backend/requirements.txt
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## Frontend Setup (React)
+### Frontend
 
-### 1. Install Node.js dependencies
-
-```powershell
+```bash
 cd frontend
 npm install
+npm start                        # opens http://localhost:3000
 ```
 
-### 2. Start React development server
+### Production
 
-```powershell
-npm start
+```bash
+cd frontend && npm run build && cd ..
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
+# open http://localhost:8000
 ```
 
-This will open `http://localhost:3000` in your browser.
+## API
 
-### 3. Build for production (optional)
+| Method | Endpoint | Body | Purpose |
+|---|---|---|---|
+| `POST` | `/api/bert/extract` | `{ text }` | Extract PII entities |
+| `POST` | `/api/llama/anonymize` | `{ text, replacement="[REDACTED]" }` | Anonymize PII in text |
+| `GET` | `/api/metrics` | — | Model performance metrics |
+| `GET` | `/api/data_schema` | — | Entity schema and validation rules |
 
-```powershell
-npm run build
+## Project structure
+
+```
+backend/            FastAPI service and model serving
+frontend/           React UI (extraction / anonymization panels, metrics)
+data_schema.json    Entity definitions, examples, and validation regexes
+metrics_summary.json  Evaluation results across 32,017 labeled entities
+test_*.py           Unit and validation tests (regex, tokenizer, cross-validation)
 ```
 
-## Running the Full Application
+## Why local-first?
 
-### Development Mode
+Banking PII cannot be sent to third-party APIs. This service is designed so inference, validation, and anonymization all happen on-device — suitable for sensitive text workflows where data residency is non-negotiable.
 
-1. Start the Python backend: `uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload`
-2. Start the React frontend: `cd frontend && npm start`
-3. Open `http://localhost:3000` in your browser
+---
 
-### Production Mode
-
-1. Build the React app: `cd frontend && npm run build`
-2. Start the Python backend: `uvicorn backend.main:app --host 0.0.0.0 --port 8000`
-3. Open `http://localhost:8000` in your browser
-
-## API Endpoints
-
-- POST `/api/bert/extract` { text }
-- POST `/api/llama/anonymize` { text, replacement="[REDACTED]" }
-- GET `/api/metrics`
-- GET `/api/data_schema`
-
-## Features
-
-- Modern React UI with dark theme
-- Real-time PII extraction and anonymization
-- System metrics and data schema display
-- Responsive design for mobile and desktop
-- Error handling and loading states
-
-## Notes
-
-- Uses GPU if available (`torch.cuda.is_available()`), otherwise CPU
-- Models are loaded from the existing folders at workspace root
-- React frontend proxies API calls to Python backend in development
+<sub>Built by [Harshil Agrawal](https://harshil-portfolio.duckdns.org/) · MS Data Science @ Virginia Tech</sub>
