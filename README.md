@@ -9,15 +9,15 @@
 
 ## Results
 
-Evaluated on **32,017 labeled entities** across 25 PII classes ([`metrics_summary.json`](metrics_summary.json)):
+Latest validated run across 25 PII classes ([`metrics_summary 1.json`](metrics_summary%201.json); earlier run: [`metrics_summary.json`](metrics_summary.json)):
 
 | Metric | Score |
 |---|---|
-| **Micro-F1 (overall)** | **0.840** |
-| Precision | 0.801 |
-| Recall | 0.884 |
-| F1 — regulated identifiers (PAN, IFSC, credit card, driver's license, email) | **1.00** |
-| F1 — Aadhaar | 0.976 |
+| **Micro-F1 (overall)** | **0.866** |
+| Precision | 0.812 |
+| Recall | 0.928 |
+| F1 — Aadhaar, driver's license, email | **1.00** |
+| F1 — account number / PAN | 0.997 / 0.993 |
 
 High recall on regulated identifiers is the design goal: in a privacy pipeline, a missed entity costs far more than a false positive.
 
