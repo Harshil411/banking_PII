@@ -120,7 +120,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 python -m spacy download en_core_web_md
 
-pytest                                    # 176 tests
+pytest                                    # 179 tests
 uvicorn app.main:app --port 8000          # demo at http://localhost:8000
 ```
 
@@ -228,7 +228,7 @@ app/validate/            checksums.py (tier 1), structural.py (tier 2)
 app/detect/              taxonomy scanners; Presidio behind a Protocol
 app/core/                arbitration, anonymisation, pipeline, types
 synth/                   templates and the deterministic generator
-tests/                   176 tests; fixtures/ holds externally sourced vectors
+tests/                   179 tests; fixtures/ holds externally sourced vectors
 tools/                   scoring probe, corpus check, sample generator
 data/corpus/frozen/      committed reference set, CI gates on it
 ```
