@@ -147,7 +147,9 @@ way to score well on synthetic data is to claim every digit run on the page.
 
 `value_kind` is recorded per span at generation time because it cannot be
 recovered afterwards, and "94.4% of regex-passing near-misses rejected" is not
-computable without it.
+computable without it. *(Corrected 2026-09-16: that figure turned out to be
+largely true by construction — see "The near-miss rejection rate is not a
+score".)*
 
 ## 2026-09-15 — Generator and validator must be able to disagree
 
@@ -238,3 +240,130 @@ is a latency number in costume.
 The rejection rate is the one unique to this design: a rise in validator
 rejections signals an input-distribution change *before* the label mix visibly
 moves, so drift monitoring can watch something better than PSI over labels.
+
+## 2026-09-16 — A held-out split, because the headline number was in-distribution
+
+Every detection rule — the 32-character context window, the gating word lists,
+the arbitration order — was tuned by measuring documents built from ten
+templates, and the frozen corpus used to report results was built from the same
+ten. A different seed does not make a different distribution. Reporting that
+number alone would have been grading the rules on the phrasing they were fitted
+to.
+
+Four new templates were written before any result on them was seen, in phrasing
+the tuning set never uses: a first-person hardship letter ("her Social Security
+number is"), an escrow email thread with a quoted reply ("ABA …, acct …"), a
+bankruptcy referral memo, and a title curative note. The corpus built from them
+is report-only. A test asserts the two template sets share nothing.
+
+Result: strict micro-F1 0.977 on both. The aggregate generalises; individual
+types do not uniformly — `LOAN_NUMBER` recall falls to 0.747, while
+`US_ACCOUNT_NUM` rises from 0.778 to 0.941.
+
+The honest weakness: the same person wrote the rules and the held-out templates,
+and knew the context-word lists while writing. A held-out set written by someone
+who had not read the rules would be stronger.
+
+Rejected: a random document-level split of one corpus. Documents from the same
+template share sentence structure almost exactly, so that split would leak just
+as badly as having none.
+
+## 2026-09-16 — The near-miss rejection rate is not a score
+
+The README previously led with "94.4% of adversarial near-misses rejected" as
+the number worth reading. Rebuilding the scorer properly showed two problems.
+
+The old probe counted a near-miss as rejected only if *nothing* was kept at its
+exact span, which mixed two different outcomes. Separated — rejected as its own
+type, versus kept under a different label — rejection is 100% on both splits.
+
+And 100% is guaranteed. The generator only emits adversarial values that
+`test_adversarial_spans_fail_their_validators` proves the validator rejects, so
+the rate cannot fall unless that test is broken. It verifies the pipeline is
+wired correctly; it does not measure detection skill. It stays in the CI gate,
+where catching mis-wiring is exactly its job, and comes off the list of results.
+
+The numbers now reported are the ones the generator does not control: how often
+PII-shaped distractors get claimed (2.6% tuning, 0.0% held-out), and how many
+rejected near-misses were still redacted under a different label (11 of 161,
+15 of 149).
+
+## 2026-09-16 — Strict and relaxed matching are both reported
+
+Strict matching requires identical offsets; relaxed accepts any overlap with the
+same type, one-to-one. Strict is the headline because redaction that misses a
+character leaks it.
+
+Relaxed is reported alongside because the gap diagnoses the failure. Held-out
+`PERSON_NAME` is 0.948 strict and 0.978 relaxed: the model finds the names and
+draws the boundaries wrong, which calls for span trimming, not a better NER
+model. A single number would hide which problem exists.
+
+Predictions that land on a near-miss or a distractor count as false positives
+for whatever type was predicted — conservative, since a relabelled near-miss
+routing number is arguably a reasonable account-number reading.
+
+## 2026-09-16 — The CI gate: tight tolerances, per-type floors, refuse changed corpora
+
+Strict micro-F1 may not drop more than 0.005 on either split; any type with
+support of 20 or more may not lose more than 0.02 F1; rejection may not fall and
+distractor claims may not rise. Tolerances are tight because every gated number
+is deterministic — they exist to let a small deliberate trade-off through, not to
+absorb noise that does not exist.
+
+Per-type floors exist because v1's "improved" run lifted the aggregate while one
+type lost 37 points of precision. Types under 20 spans are not gated
+individually: one document moves them several points, and a gate that fires on
+that is a gate people learn to ignore.
+
+If a corpus's SHA-256 has changed, the gate refuses to compare at all rather than
+comparing numbers from different data. Rebaselining is a deliberate `make
+baseline`, committed separately so the baseline's recorded commit is the code
+that produced it.
+
+## 2026-09-16 — Template prose reflowed; a distractor renamed
+
+Template paragraphs were hard-wrapped mid-sentence, which no servicing system
+produces and which made the demo read raggedly. Reflowed, keeping structural
+breaks — headers, address blocks, `label: value` lines, tables. Measured before
+and after: true positives 1896 → 1897, micro-F1 unchanged at 0.977. A
+readability fix, not a hidden metric change.
+
+The distractor "Tier 2" became "Priority 2". It is exactly the kind of thing a
+distractor should be, but it collided with the demo's own tier vocabulary and
+made the page harder to read.
+
+## 2026-09-16 — Demo redesign: evidence first, strict sandbox, self-hosted type
+
+The first page worked but read as a prototype, opened on a sample with nothing
+rejected, and conveyed tier by colour alone with rejection reasons hidden in
+hover tooltips — unreachable by keyboard or touch.
+
+Design direction came from the ui-ux-pro-max skill's retrieval over its style,
+palette and typography data: Swiss minimalism, slate neutrals, IBM Plex Sans with
+JetBrains Mono. Its page-pattern suggestion ("documentation landing") did not fit
+an interactive tool and was not used.
+
+- **Tier is carried by underline pattern** — solid, dashed, dotted, struck — as
+  well as hue, and by badge text. Selecting any span opens an evidence panel:
+  validator, reason, source, and every other reading of those characters that
+  was considered and why it lost.
+- **Samples are chosen by running the pipeline**, keeping only documents that
+  show at least one tier-1 proof and one rejection.
+- **Fonts are self-hosted** (SIL OFL, licences committed) instead of loaded from
+  Google Fonts, so the page makes no third-party request and works behind a
+  bank's egress controls.
+- **A strict CSP** with no `unsafe-inline`. That forced a real structural choice:
+  no inline script or `style` attributes, so the theme bootstrap is a separate
+  blocking file and bar widths are set through the CSSOM. The page renders text
+  people paste; the CSP is the backstop if escaping is ever got wrong.
+- **Numbers on the page come from `/v1/evaluation`**, the same baseline CI gates
+  on, rather than figures typed into HTML.
+
+Verified with axe-core against WCAG 2.2 AA in both themes (0 violations after
+fixing one: a tag using `opacity: .75` measured 4.0:1 contrast) and by keyboard.
+Neither replaces a screen-reader pass, which has not been done.
+
+Rejected: reintroducing a component framework. The page is one screen of
+interaction; a build step would put Node into Docker and CI for no user-visible
+gain.
