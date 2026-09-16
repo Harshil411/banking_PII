@@ -56,8 +56,15 @@ def _is_repdigit(digits: str) -> bool:
 
 
 def _is_sequential(digits: str) -> bool:
-    deltas = {ord(b) - ord(a) for a, b in zip(digits, digits[1:], strict=False)}
-    return deltas in ({1}, {-1})
+    """True for a strictly ascending or descending run, counting modulo 10.
+
+    The modular step matters: "34567890" wraps from 9 to 0, so a plain
+    subtraction sees a delta of -9 and concludes the run is not sequential.
+    It is exactly the kind of filler that appears in spreadsheet columns and
+    padded reference fields, and it should be rejected alongside "12345678".
+    """
+    deltas = {(ord(b) - ord(a)) % 10 for a, b in zip(digits, digits[1:], strict=False)}
+    return deltas in ({1}, {9})
 
 
 def ein(value: str) -> tuple[bool, str]:

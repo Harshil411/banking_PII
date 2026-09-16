@@ -1,0 +1,24 @@
+PAYOFF DEMAND STATEMENT
+
+Prepared for: {{SLOT:PERSON_NAME:borrower}}
+Loan number: {{SLOT:LOAN_NUMBER:loan}}
+MIN: {{SLOT:MERS_MIN:min}}
+Property: {{SLOT:STREET_ADDRESS:prop_addr}}, {{SLOT:CITY:prop_city}}, {{SLOT:US_STATE:prop_state|abbrev}} {{SLOT:ZIP:prop_zip}}
+Statement date: {{SLOT:DATE:stmt_date}}
+Good through: {{SLOT:DATE:good_through}}
+
+Unpaid principal balance            {{SLOT:MONEY:upb}}
+Interest to good-through date       {{SLOT:MONEY:interest}}
+Escrow advance                      {{SLOT:MONEY:escrow_adv}}
+Recording and reconveyance fee      {{SLOT:MONEY:fee}}
+TOTAL AMOUNT DUE                    {{SLOT:MONEY:total}}
+
+Interest accrues at {{DISTRACTOR:rate}} per annum. Figures assume no further payments post.
+
+WIRE INSTRUCTIONS
+Receiving bank routing number: {{SLOT:ABA_ROUTING:routing}}
+Credit to account: {{SLOT:US_ACCOUNT_NUM:account}}
+Reference the loan number above and {{DISTRACTOR:reference}} on the wire.
+
+Prepared by {{SLOT:PERSON_NAME:preparer}}, NMLS {{SLOT:NMLS_ID:nmls}}.
+Direct line {{SLOT:PHONE:phone}}. Email {{SLOT:EMAIL:email}}.

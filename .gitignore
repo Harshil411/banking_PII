@@ -1,10 +1,8 @@
-# Exclude model directories
-bert-base-multilingual-cased_100k_v1/
-llama-ai4privacy-multilingual-categorical-anonymiser-openpii_100k_v1/
-
-# Exclude evaluation directories
-eval_bert-base-multilingual-cased_100k_v1/
-eval_llama-ai4privacy-multilingual-categorical-anonymiser-openpii_100k_v1/
+# Generated corpora. The frozen slice is committed on purpose: it is what CI
+# gates on, and a regression gate that regenerates its own reference set is
+# not a gate. Everything else is reproducible from a seed and a manifest.
+data/corpus/*
+!data/corpus/frozen/
 
 # Python
 __pycache__/

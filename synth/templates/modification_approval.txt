@@ -1,0 +1,26 @@
+LOAN MODIFICATION AGREEMENT - APPROVAL NOTICE
+
+{{SLOT:DATE:approval_date}}
+
+Borrower:    {{SLOT:PERSON_NAME:borrower}}
+Co-borrower: {{SLOT:PERSON_NAME:coborrower}}
+Property:    {{SLOT:STREET_ADDRESS:prop_addr}}, {{SLOT:CITY:prop_city}}, {{SLOT:US_STATE:prop_state|abbrev}} {{SLOT:ZIP:prop_zip}}
+Loan number: {{SLOT:LOAN_NUMBER:loan}}
+MIN:         {{SLOT:MERS_MIN:min}}
+
+You have successfully completed the trial period plan. We are pleased to offer a permanent
+modification of your loan.
+
+The new principal balance will be {{SLOT:MONEY:new_upb}}. The new monthly payment of
+principal and interest will be {{SLOT:MONEY:new_pi}}, first due {{SLOT:DATE:first_due}}. The
+modified term will be {{DISTRACTOR:term}} from the modification effective date.
+
+Underwriting relied on the credit score of {{SLOT:CREDIT_SCORE:score}} pulled
+{{SLOT:DATE:pull_date}} and on the income documentation submitted with
+{{DISTRACTOR:form}}.
+
+Return the signed agreement to {{SLOT:STREET_ADDRESS:return_addr}},
+{{SLOT:CITY:return_city}}, {{SLOT:US_STATE:return_state|abbrev}} {{SLOT:ZIP:return_zip}}, or
+scan and email it to {{SLOT:EMAIL:email}}.
+
+Questions: {{SLOT:PERSON_NAME:spoc}} at {{SLOT:PHONE:phone}}, NMLS {{SLOT:NMLS_ID:nmls}}.

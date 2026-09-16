@@ -167,11 +167,28 @@ class GoldSpan:
     Offsets are recorded as the document is constructed, never recovered by
     searching the finished text -- a borrower's name appears in the header
     and again in the body, and ``str.find`` returns the wrong one.
+
+    ``entity_type`` is ``None`` for distractors: they are servicing text that
+    is PII-shaped but is not PII, so they belong to no type. They are recorded
+    with offsets anyway, because a precision number is only meaningful if the
+    corpus contains things a detector ought to leave alone.
     """
 
-    entity_type: str
+    entity_type: str | None
     start: int
     end: int
     text: str
-    tier: int
+    tier: int | None
     value_kind: ValueKind
+    note: str = ""
+
+    def as_dict(self) -> dict:
+        return {
+            "entity_type": self.entity_type,
+            "start": self.start,
+            "end": self.end,
+            "text": self.text,
+            "tier": self.tier,
+            "value_kind": self.value_kind.value,
+            "note": self.note,
+        }

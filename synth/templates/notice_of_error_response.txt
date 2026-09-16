@@ -1,0 +1,26 @@
+RESPONSE TO NOTICE OF ERROR
+Submitted under 12 CFR {{DISTRACTOR:citation}}
+
+Date of this response: {{SLOT:DATE:response_date}}
+Loan number: {{SLOT:LOAN_NUMBER:loan}}
+MIN: {{SLOT:MERS_MIN:min}}
+Borrower: {{SLOT:PERSON_NAME:borrower}}
+
+We received your notice of error dated {{SLOT:DATE:noe_date}} asserting that a payment of
+{{SLOT:MONEY:disputed}} was misapplied to suspense rather than to principal and interest.
+
+We have completed our investigation. Our records show the payment was received on
+{{SLOT:DATE:received_date}} from account ending in the last four digits of
+{{SLOT:US_ACCOUNT_NUM:account}} at routing number {{SLOT:ABA_ROUTING:routing}}. The funds were
+held in suspense because the amount received was less than the scheduled monthly obligation of
+{{SLOT:MONEY:scheduled}}.
+
+We have corrected the application as of {{SLOT:DATE:correction_date}}. A corrected
+{{DISTRACTOR:form}} statement is enclosed.
+
+You may contact us at {{SLOT:PHONE:phone}}. Written correspondence may be sent to
+{{SLOT:STREET_ADDRESS:servicer_addr}}, {{SLOT:CITY:servicer_city}},
+{{SLOT:US_STATE:servicer_state|abbrev}} {{SLOT:ZIP:servicer_zip}}, or by email to
+{{SLOT:EMAIL:email}}.
+
+Our tax identification number for reporting purposes is {{SLOT:EIN:ein}}.

@@ -1,0 +1,16 @@
+SERVICING CALL NOTE
+Loan {{SLOT:LOAN_NUMBER:loan}} | Recorded {{SLOT:DATE:call_date}} | Agent {{SLOT:PERSON_NAME:agent}}
+
+Inbound call from borrower {{SLOT:PERSON_NAME:borrower}} regarding the {{DISTRACTOR:reference}} payment
+posted on {{SLOT:DATE:post_date}}. Borrower verified identity with the last four of SSN
+{{SLOT:SSN:ssn}} and confirmed the mailing address as {{SLOT:STREET_ADDRESS:addr}},
+{{SLOT:CITY:city}}, {{SLOT:US_STATE:state|abbrev}} {{SLOT:ZIP:zip}}.
+
+Borrower states the escrow disbursement of {{SLOT:MONEY:escrow}} was not expected and asked why
+the monthly obligation moved. Explained the annual analysis and that the note rate of
+{{DISTRACTOR:rate}} has not changed. Borrower was satisfied with the explanation.
+
+Callback number on file is {{SLOT:PHONE:phone}}; borrower asked that we also use
+{{SLOT:EMAIL:email}} for written correspondence. Updated both in the system of record.
+
+No further action required. Reference {{DISTRACTOR:reference}} for the recorded call.

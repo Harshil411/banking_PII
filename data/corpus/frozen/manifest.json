@@ -1,0 +1,36 @@
+{
+  "adversarial_rate": 0.15,
+  "generator_version": "1.0.0",
+  "n_docs": 120,
+  "n_spans": 2376,
+  "seed": 20260915,
+  "sha256": "0b373eefa2ca435e933d5201c61988cb4f06dd6e5f78d1f7868ff7d2fbaa0664",
+  "spans_by_kind": {
+    "adversarial": 161,
+    "distractor": 264,
+    "valid": 1951
+  },
+  "spans_by_type": {
+    "(distractor)": 264,
+    "ABA_ROUTING": 48,
+    "CITY": 132,
+    "CREDIT_CARD": 24,
+    "CREDIT_SCORE": 24,
+    "DATE": 360,
+    "EIN": 36,
+    "EMAIL": 108,
+    "ITIN": 12,
+    "LOAN_NUMBER": 132,
+    "MERS_MIN": 60,
+    "MONEY": 276,
+    "NMLS_ID": 60,
+    "PERSON_NAME": 240,
+    "PHONE": 132,
+    "SSN": 24,
+    "STREET_ADDRESS": 132,
+    "US_ACCOUNT_NUM": 48,
+    "US_STATE": 132,
+    "ZIP": 132
+  },
+  "taxonomy_version": "1.0.0"
+}

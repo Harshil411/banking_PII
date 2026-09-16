@@ -1,0 +1,22 @@
+ANNUAL ESCROW ACCOUNT DISCLOSURE STATEMENT
+
+{{SLOT:PERSON_NAME:borrower}}
+{{SLOT:STREET_ADDRESS:addr}}
+{{SLOT:CITY:city}}, {{SLOT:US_STATE:state|abbrev}} {{SLOT:ZIP:zip}}
+
+Loan number {{SLOT:LOAN_NUMBER:loan}}
+Analysis date {{SLOT:DATE:analysis_date}}
+Effective date {{SLOT:DATE:effective_date}}
+
+This statement compares the escrow activity we projected for the past twelve months with the
+activity that actually occurred. Your account shows a shortage of {{SLOT:MONEY:shortage}}.
+
+Your new monthly payment will be {{SLOT:MONEY:new_payment}} effective
+{{SLOT:DATE:effective_date}}, consisting of principal and interest of
+{{SLOT:MONEY:pi}} plus an escrow deposit of {{SLOT:MONEY:escrow_deposit}}.
+
+The shortage may be paid in full or spread across {{DISTRACTOR:term}}. The note rate of
+{{DISTRACTOR:rate}} is unaffected by this analysis.
+
+If any disbursement shown is incorrect, submit a request for information under
+{{DISTRACTOR:citation}} to {{SLOT:EMAIL:email}} or call {{SLOT:PHONE:phone}}.

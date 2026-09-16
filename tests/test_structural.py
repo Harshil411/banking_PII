@@ -107,6 +107,17 @@ def test_account_number_rejects_degenerate_runs():
     assert not us_account_num("1" * 18)[0]       # too long, and MERS_MIN territory
 
 
+def test_account_number_rejects_wrapping_sequential_runs():
+    """A run that wraps 9 -> 0 is still a sequential run.
+
+    Plain subtraction reads that step as -9 and lets the value through. It is
+    ordinary spreadsheet filler and belongs with the other degenerate cases.
+    """
+    assert not us_account_num("34567890")[0]
+    assert not us_account_num("567890123")[0]
+    assert not us_account_num("321098765")[0]
+
+
 def test_account_number_excludes_mers_length():
     """18 digits is MERS_MIN territory; the two types must not both claim it."""
     seventeen = "48392011748392011"

@@ -1,0 +1,20 @@
+COLLECTION CONTACT LOG
+Loan {{SLOT:LOAN_NUMBER:loan}} | Cycle {{SLOT:DATE:cycle_date}}
+
+{{SLOT:DATE:attempt1}} 09:12 - Outbound to {{SLOT:PHONE:phone}}. No answer, no message left.
+
+{{SLOT:DATE:attempt2}} 14:48 - Outbound to {{SLOT:PHONE:phone2}}. Spoke with
+{{SLOT:PERSON_NAME:borrower}}. Borrower advised of past due amount {{SLOT:MONEY:past_due}}
+and total delinquency of {{SLOT:MONEY:delinquency}}. Borrower states hours were reduced at
+employer and requested loss mitigation packet be sent to {{SLOT:EMAIL:email}}.
+
+Borrower verified identity using date of birth {{SLOT:DATE:dob}} and the last four of SSN
+{{SLOT:SSN:ssn}}. Mailing address confirmed as {{SLOT:STREET_ADDRESS:addr}},
+{{SLOT:CITY:city}}, {{SLOT:US_STATE:state|abbrev}} {{SLOT:ZIP:zip}}.
+
+Borrower offered a partial payment of {{SLOT:MONEY:partial}} by debit card ending
+{{SLOT:CREDIT_CARD:card}}. Advised that partial payments are held in suspense per the note.
+Borrower declined to proceed.
+
+Promise to pay recorded for {{SLOT:DATE:ptp}}. Escalated to single point of contact
+{{SLOT:PERSON_NAME:spoc}}, NMLS {{SLOT:NMLS_ID:nmls}}. Workflow {{DISTRACTOR:reference}}.
