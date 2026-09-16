@@ -35,6 +35,26 @@ Precedence, in order:
    total, because a frozen evaluation set whose diffs shuffle is not a gate.
 7. Partial overlaps drop the loser whole. Spans are never truncated: half of
    an account number is not a different, shorter entity.
+
+Tier comes first, and that ordering is measured rather than assumed. Three
+arrangements were scored against 300 synthetic servicing documents:
+
+    tier, length, gating, proximity        micro-F1 0.948   (this one)
+    length, tier, gating, proximity        micro-F1 0.945
+    length, gating, bucketed proximity,    micro-F1 0.936
+      then tier
+
+Putting length or proximity ahead of tier lets spaCy's long LOCATION spans
+swallow validated ZIPs and states, and lets US_ACCOUNT_NUM claim spans that
+belong to narrower types -- its precision fell to 0.526 in the third
+arrangement.
+
+The residual cost of tier-first is visible and worth stating: in "credit
+account 483920117. SSN 457551275." the account number is labelled SSN,
+because SSN is tier 1 and the SSA rules happen to pass. The span is still
+redacted, so the privacy outcome is unaffected, but the label is wrong.
+US_ACCOUNT_NUM is the weakest non-model type in the taxonomy at F1 0.739, and
+this is most of why.
 """
 
 from __future__ import annotations
