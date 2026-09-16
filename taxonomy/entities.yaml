@@ -53,6 +53,24 @@ entities:
     regex: '\b\d{3}[- ]?\d{2}[- ]?\d{4}\b'
     validator: ssn
     generator: ssn
+    # Context-gated, which is unusual for a tier-1 type and worth explaining.
+    #
+    # Tier 1 means a rule can prove a candidate impossible, but the rules
+    # differ enormously in how much they exclude. Luhn rejects ~90% of digit
+    # strings and the ABA checksum roughly as many. The SSA's rules reject only
+    # about a quarter: they bar area 000, 666 and 900-999, group 00 and serial
+    # 0000, and admit everything else. So "passes SSN validation" on a bare
+    # nine-digit run is weak evidence, and ungated, SSN claimed every routing
+    # and account number on the page -- measured at precision 0.164, and it
+    # drove ABA_ROUTING recall to 0.022 by winning ties on declaration order.
+    #
+    # "last four" is deliberately not a context word: it applies equally to
+    # cards and accounts, and including it gated SSN in beside every wire
+    # instruction in the corpus.
+    #
+    # The cost is genuine: an unlabelled SSN in a bare table column is missed.
+    # In servicing correspondence they are essentially always labelled.
+    context_words: ["ssn", "social security", "ss#", "taxpayer", "tin"]
     examples:
       - "078-05-1120"
       - "219 09 9999"
@@ -73,6 +91,9 @@ entities:
     regex: '\b\d{9}\b'
     validator: aba_routing
     generator: aba_routing
+    # Gated so a routing number in a wire block outranks an SSN reading of the
+    # same nine digits when both validators happen to pass.
+    context_words: ["routing", "aba", "transit", "wire", "receiving bank"]
     examples:
       - "011000015"      # FRB Boston
       - "121000248"      # Wells Fargo
@@ -168,7 +189,11 @@ entities:
     # A leading \b cannot anchor this: the position before "(" is not a word
     # boundary, so \b would silently shift the match past the opening paren.
     # A digit lookbehind/lookahead pair does the job the boundary cannot.
-    regex: '(?<!\d)(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}(?!\d)'
+    # Requires visible formatting -- parentheses, a separator, or a +1 prefix.
+    # A bare ten-digit run is not enough: it collides with account numbers and
+    # the NANP rules are too permissive to break the tie. The cost is that
+    # unformatted phone numbers are not detected; recorded in the README.
+    regex: '(?<!\d)(?:\+1[-. ]?)?(?:\(\d{3}\)[-. ]?|\d{3}[-. ])\d{3}[-. ]?\d{4}(?!\d)'
     validator: nanp_phone
     generator: phone
     examples:
@@ -179,6 +204,7 @@ entities:
       - "(115) 555-0142"   # area code cannot begin with 1
       - "(411) 555-0142"   # N11 service code
       - "(415) 155-0142"   # exchange cannot begin with 1
+      - "(444) 444-4444"   # a single repeated digit is not a subscriber number
 
   EMAIL:
     tier: 2
@@ -221,6 +247,9 @@ entities:
     regex: '\b\d{8,17}\b'
     validator: us_account_num
     generator: us_account_num
+    # The broadest pattern in the taxonomy, so it is gated: ungated it claimed
+    # imaging-system document ids and other servicing references.
+    context_words: ["account", "acct", "credit to", "deposit", "remit", "ending in"]
     examples:
       - "483920117"
       - "00123456789012"

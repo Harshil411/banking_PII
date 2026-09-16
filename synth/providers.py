@@ -235,8 +235,15 @@ def _phone_adversarial(rng: Random) -> tuple[str, str]:
 
 
 def _email_valid(rng: Random, first: str = "", last: str = "") -> str:
-    first = (first or rng.choice(("alex", "jordan", "sam", "riley", "casey"))).lower()
-    last = (last or rng.choice(("nguyen", "delgado", "oconnor", "harper", "obrien"))).lower()
+    # Apostrophes are stripped: "O'Connor" becomes "oconnor", as every mail
+    # provider does. Leaving them in produced addresses the scanner could only
+    # match from the apostrophe onward, which is a corpus artefact rather than
+    # a detector weakness and would have quietly depressed EMAIL precision.
+    def _clean(value: str) -> str:
+        return "".join(c for c in value.lower() if c.isalnum())
+
+    first = _clean(first or rng.choice(("alex", "jordan", "sam", "riley", "casey")))
+    last = _clean(last or rng.choice(("nguyen", "delgado", "oconnor", "harper", "obrien")))
     local = rng.choice((f"{first}.{last}", f"{first[0]}{last}", f"{first}_{last}"))
     return f"{local}@{rng.choice(_EMAIL_DOMAINS)}"
 

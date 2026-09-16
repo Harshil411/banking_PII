@@ -112,6 +112,8 @@ def nanp_phone(value: str) -> tuple[bool, str]:
         return False, f"exchange {exchange} cannot begin with {exchange[0]}"
     if exchange[1] == "1" and exchange[2] == "1":
         return False, f"exchange {exchange} is an N11 service code"
+    if _is_repdigit(digits):
+        return False, f"{digits} is a single repeated digit, not a subscriber number"
     return True, f"area code {area} and exchange {exchange} are both valid NANP codes"
 
 

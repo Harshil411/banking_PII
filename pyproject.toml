@@ -21,6 +21,9 @@ dependencies = { file = ["requirements.txt"] }
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+markers = [
+  "slow: needs the spaCy model loaded; deselect with -m 'not slow'",
+]
 
 [tool.ruff]
 line-length = 100

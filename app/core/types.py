@@ -71,6 +71,11 @@ class Candidate:
     score: float
     source: str
     pattern_name: str | None = None
+    #: Characters between this span and the nearest context word that admitted
+    #: it, or None for types that are not context-gated. Used by arbitration:
+    #: in "loan number 0012345678" both LOAN_NUMBER and US_ACCOUNT_NUM are
+    #: admitted by a nearby context word, and the nearer word decides.
+    context_distance: int | None = None
 
     @classmethod
     def from_span(
@@ -82,6 +87,7 @@ class Candidate:
         score: float,
         source: str,
         pattern_name: str | None = None,
+        context_distance: int | None = None,
     ) -> Candidate:
         """Build a candidate by slicing ``document``.
 
@@ -100,6 +106,7 @@ class Candidate:
             score=score,
             source=source,
             pattern_name=pattern_name,
+            context_distance=context_distance,
         )
 
     def overlaps(self, other: Candidate | Entity) -> bool:
@@ -125,6 +132,7 @@ class Entity:
     validator: str | None = None
     reason: str = ""
     pattern_name: str | None = None
+    context_distance: int | None = None
 
     @classmethod
     def from_candidate(
@@ -147,6 +155,7 @@ class Entity:
             validator=validator,
             reason=reason,
             pattern_name=candidate.pattern_name,
+            context_distance=candidate.context_distance,
         )
 
     def overlaps(self, other: Candidate | Entity) -> bool:
