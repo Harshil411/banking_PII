@@ -11,7 +11,13 @@ import pytest
 
 from app.core.taxonomy import load_taxonomy
 from app.core.types import ValueKind
-from synth.generate import generate, load_templates, write_corpus
+from synth.generate import (
+    HOLDOUT_TEMPLATE_DIR,
+    TEMPLATE_DIR,
+    generate,
+    load_templates,
+    write_corpus,
+)
 from synth.providers import PROVIDERS
 
 from .conftest import TAXONOMY_PATH
@@ -200,8 +206,14 @@ def test_different_seed_produces_a_different_corpus(tmp_path, tax):
 
 def test_manifest_records_what_is_needed_to_reproduce(tmp_path, tax):
     manifest = write_corpus(generate(SEED, 20, tax), tmp_path, SEED, tax.version, 0.15)
-    required = ("seed", "taxonomy_version", "generator_version", "adversarial_rate",
-                "n_docs", "sha256")
+    required = (
+        "seed",
+        "taxonomy_version",
+        "generator_version",
+        "adversarial_rate",
+        "n_docs",
+        "sha256",
+    )
     for key in required:
         assert key in manifest, f"manifest cannot reproduce the corpus without {key}"
 
@@ -231,3 +243,24 @@ def test_repeated_slots_reuse_one_value(tax):
         assert names.count(names[0]) >= 2, f"{doc['doc_id']}: borrower name was not reused"
         return
     pytest.fail("no loss_mitigation_letter in the sample")
+
+
+# --------------------------------------------------------------------------
+# Held-out templates
+# --------------------------------------------------------------------------
+
+
+def test_holdout_templates_share_nothing_with_tuning_templates():
+    """A held-out template that also appears in the tuning set is not held out."""
+    tuning = {t.name for t in load_templates(TEMPLATE_DIR)}
+    holdout = {t.name for t in load_templates(HOLDOUT_TEMPLATE_DIR)}
+    assert holdout and not tuning & holdout
+
+
+def test_holdout_corpus_obeys_the_same_invariants(tax):
+    documents = generate(7, 80, tax, templates=load_templates(HOLDOUT_TEMPLATE_DIR))
+    for doc in documents:
+        for span in doc["spans"]:
+            assert doc["text"][span["start"] : span["end"]] == span["text"]
+            if span["value_kind"] == ValueKind.ADVERSARIAL.value:
+                assert not tax.validators[span["entity_type"]](span["text"])[0]

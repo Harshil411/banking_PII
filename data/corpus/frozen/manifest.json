@@ -4,7 +4,7 @@
   "n_docs": 120,
   "n_spans": 2376,
   "seed": 20260915,
-  "sha256": "28d9bfaafaa251c24b96a33e923a3b220ca4e4f5065496070bbdefb84f37f50b",
+  "sha256": "61cca2afba182ec4a9ff281cab1f2d04b1ba4feeb22321ad40782ab6697bc73c",
   "spans_by_kind": {
     "adversarial": 161,
     "distractor": 264,
@@ -32,5 +32,18 @@
     "US_STATE": 132,
     "ZIP": 132
   },
-  "taxonomy_version": "1.0.0"
+  "taxonomy_version": "1.0.0",
+  "template_dir": "templates",
+  "template_ids": [
+    "call_center_note",
+    "collection_call_log",
+    "escrow_analysis",
+    "loss_mitigation_letter",
+    "modification_approval",
+    "notice_of_error_response",
+    "payoff_demand",
+    "periodic_statement",
+    "request_for_information_response",
+    "servicing_transfer_notice"
+  ]
 }

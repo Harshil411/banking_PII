@@ -1,0 +1,12 @@
+INTERNAL MEMO - BANKRUPTCY REFERRAL
+
+Prepared {{SLOT:DATE:memo_date}} by {{SLOT:PERSON_NAME:analyst}}
+Ref {{DISTRACTOR:reference}}
+
+Debtor {{SLOT:PERSON_NAME:borrower}} filed a Chapter 13 petition on {{SLOT:DATE:petition_date}}. Automatic stay is in effect; suspend all collection activity on loan {{SLOT:LOAN_NUMBER:loan}} (MIN {{SLOT:MERS_MIN:min}}) immediately.
+
+Identity was confirmed against the petition: SSN {{SLOT:SSN:ssn}}, DOB {{SLOT:DATE:dob}}, residence {{SLOT:STREET_ADDRESS:addr}}, {{SLOT:CITY:city}}, {{SLOT:US_STATE:state|abbrev}} {{SLOT:ZIP:zip}}. Co-debtor ITIN on file is {{SLOT:ITIN:itin}}.
+
+Pre-petition arrears are {{SLOT:MONEY:arrears}}. Post-petition payments of {{SLOT:MONEY:payment}} should be held until the plan is confirmed. Debtor's counsel can be reached at {{SLOT:PHONE:counsel_phone}}.
+
+Proof of claim to be filed under {{DISTRACTOR:citation}} by outside counsel (TIN {{SLOT:EIN:ein}}).

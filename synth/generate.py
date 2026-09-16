@@ -48,6 +48,10 @@ GENERATOR_VERSION = "1.0.0"
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE_DIR = Path(__file__).parent / "templates"
+#: Templates never used while tuning detection rules. Corpora generated from
+#: these are report-only: adjusting a rule because of a held-out number turns
+#: the held-out set into a second development set and the number into fiction.
+HOLDOUT_TEMPLATE_DIR = Path(__file__).parent / "templates_holdout"
 DEFAULT_TAXONOMY = REPO_ROOT / "taxonomy" / "entities.yaml"
 
 _TOKEN = re.compile(
@@ -228,6 +232,7 @@ def write_corpus(
     seed: int,
     taxonomy_version: str,
     adversarial_rate: float,
+    template_dir: Path = TEMPLATE_DIR,
 ) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     jsonl_path = out_dir / "documents.jsonl"
@@ -250,6 +255,8 @@ def write_corpus(
         "taxonomy_version": taxonomy_version,
         "generator_version": GENERATOR_VERSION,
         "adversarial_rate": adversarial_rate,
+        "template_dir": template_dir.name,
+        "template_ids": sorted({doc["template_id"] for doc in documents}),
         "n_docs": len(documents),
         "n_spans": sum(len(d["spans"]) for d in documents),
         "spans_by_kind": dict(sorted(kinds.items())),
@@ -269,12 +276,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "data" / "corpus" / "dev")
     parser.add_argument("--taxonomy", type=Path, default=DEFAULT_TAXONOMY)
     parser.add_argument("--adversarial-rate", type=float, default=0.15)
+    parser.add_argument(
+        "--templates",
+        choices=("tuning", "holdout"),
+        default="tuning",
+        help="tuning: templates used while developing the rules; holdout: never used for tuning",
+    )
     args = parser.parse_args(argv)
 
+    template_dir = HOLDOUT_TEMPLATE_DIR if args.templates == "holdout" else TEMPLATE_DIR
     taxonomy = load_taxonomy(args.taxonomy, known_generators=set(PROVIDERS))
-    documents = generate(args.seed, args.count, taxonomy, args.adversarial_rate)
+    documents = generate(
+        args.seed, args.count, taxonomy, args.adversarial_rate, load_templates(template_dir)
+    )
     manifest = write_corpus(
-        documents, args.out, args.seed, taxonomy.version, args.adversarial_rate
+        documents, args.out, args.seed, taxonomy.version, args.adversarial_rate, template_dir
     )
 
     print(f"wrote {manifest['n_docs']} documents, {manifest['n_spans']} spans -> {args.out}")

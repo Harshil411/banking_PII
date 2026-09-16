@@ -23,28 +23,35 @@ jobs:
           python -m spacy download en_core_web_md
 
       - name: Lint
-        run: ruff check app synth tests tools
+        run: ruff check app synth evaluation tests tools
 
       - name: Test
         run: pytest -p no:warnings
 
-      - name: Corpus is reproducible from its manifest
-        run: python tools/check_frozen_corpus.py
+      - name: Corpora are reproducible from their manifests
+        run: PYTHONPATH=. python tools/check_corpora.py
 
-  # The regression gate. Fails the build when micro-F1 falls more than a set
-  # margin below the committed baseline, and when any per-class floor is
-  # breached -- a gate on the aggregate alone would have passed v1's validated
-  # run cheerfully while IFSC precision fell 37 points.
-  #
-  # TODO: enable once tools/evaluate.py and baseline.json land. The step is
-  # present so the slot is visible rather than forgotten.
+  # The regression gate. Fails the build when strict micro-F1 drops, when any
+  # type with support >= 20 loses more than two points of F1, when adversarial
+  # rejection falls, or when distractor claims rise -- on either split. A gate
+  # on the aggregate alone would pass a run that quietly lost 37 points of
+  # precision on one type, which is exactly what v1's "improved" run did.
   eval-gate:
     runs-on: ubuntu-latest
-    if: false
     steps:
       - uses: actions/checkout@v4
-      - name: Placeholder
-        run: echo "pending -- evaluate against the frozen corpus and compare to baseline.json"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          python -m spacy download en_core_web_md
+      - name: Evaluate against the committed baseline
+        run: python -m evaluation --check
 
   image:
     runs-on: ubuntu-latest

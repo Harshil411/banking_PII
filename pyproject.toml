@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dynamic = ["dependencies"]
 
 [tool.setuptools]
-packages = ["app", "app.api", "app.core", "app.detect", "app.validate", "synth"]
+packages = ["app", "app.api", "app.core", "app.detect", "app.validate", "synth", "evaluation"]
 
 [tool.setuptools.package-data]
 app = ["web/static/*"]

@@ -1,0 +1,42 @@
+{
+  "adversarial_rate": 0.15,
+  "generator_version": "1.0.0",
+  "n_docs": 120,
+  "n_spans": 2070,
+  "seed": 20260916,
+  "sha256": "93d7ecc66beccb014dc19f7c82ad6d3e5c49e20e185c0cdcda0fdf5b58503076",
+  "spans_by_kind": {
+    "adversarial": 149,
+    "distractor": 150,
+    "valid": 1771
+  },
+  "spans_by_type": {
+    "(distractor)": 150,
+    "ABA_ROUTING": 60,
+    "CITY": 90,
+    "CREDIT_CARD": 30,
+    "DATE": 330,
+    "EIN": 60,
+    "EMAIL": 120,
+    "ITIN": 30,
+    "LOAN_NUMBER": 120,
+    "MERS_MIN": 60,
+    "MONEY": 210,
+    "NMLS_ID": 30,
+    "PERSON_NAME": 300,
+    "PHONE": 120,
+    "SSN": 60,
+    "STREET_ADDRESS": 90,
+    "US_ACCOUNT_NUM": 60,
+    "US_STATE": 90,
+    "ZIP": 60
+  },
+  "taxonomy_version": "1.0.0",
+  "template_dir": "templates_holdout",
+  "template_ids": [
+    "bankruptcy_referral_memo",
+    "borrower_hardship_letter",
+    "escrow_email_thread",
+    "title_curative_note"
+  ]
+}

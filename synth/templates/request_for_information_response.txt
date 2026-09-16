@@ -6,18 +6,12 @@ Loan number: {{SLOT:LOAN_NUMBER:loan}}
 Borrower: {{SLOT:PERSON_NAME:borrower}}
 Co-borrower: {{SLOT:PERSON_NAME:coborrower}}
 
-You requested the identity of the owner of your mortgage loan and a payment history for the
-period beginning {{SLOT:DATE:period_start}}.
+You requested the identity of the owner of your mortgage loan and a payment history for the period beginning {{SLOT:DATE:period_start}}.
 
-The owner of the loan is identified in the MERS System under MIN {{SLOT:MERS_MIN:min}}.
-The investor's taxpayer identification number is {{SLOT:EIN:ein}}.
+The owner of the loan is identified in the MERS System under MIN {{SLOT:MERS_MIN:min}}. The investor's taxpayer identification number is {{SLOT:EIN:ein}}.
 
-A complete payment history is enclosed. During the period requested, the account reflected a
-total of {{SLOT:MONEY:total_paid}} in payments received. The credit score of record at
-origination was {{SLOT:CREDIT_SCORE:score}} as reported by the bureau on
-{{SLOT:DATE:score_date}}.
+A complete payment history is enclosed. During the period requested, the account reflected a total of {{SLOT:MONEY:total_paid}} in payments received. The credit score of record at origination was {{SLOT:CREDIT_SCORE:score}} as reported by the bureau on {{SLOT:DATE:score_date}}.
 
 The taxpayer identification number we hold for the co-borrower is {{SLOT:ITIN:itin}}.
 
-Direct further questions to {{SLOT:PERSON_NAME:analyst}} at {{SLOT:PHONE:phone}}. Our records
-reference this matter as {{DISTRACTOR:reference}}.
+Direct further questions to {{SLOT:PERSON_NAME:analyst}} at {{SLOT:PHONE:phone}}. Our records reference this matter as {{DISTRACTOR:reference}}. 

@@ -11,19 +11,12 @@ Loan number with prior servicer: {{SLOT:LOAN_NUMBER:old_loan}}
 Loan number with new servicer:   {{SLOT:LOAN_NUMBER:new_loan}}
 MIN: {{SLOT:MERS_MIN:min}}
 
-The servicing of your mortgage loan is being transferred effective
-{{SLOT:DATE:effective_date}}. This transfer does not affect any term or condition of your
-mortgage other than terms directly related to the servicing of the loan.
+The servicing of your mortgage loan is being transferred effective {{SLOT:DATE:effective_date}}. This transfer does not affect any term or condition of your mortgage other than terms directly related to the servicing of the loan.
 
-Your present servicer will stop accepting payments received on or after
-{{SLOT:DATE:stop_date}}. Send all payments due on or after that date to the new servicer.
+Your present servicer will stop accepting payments received on or after {{SLOT:DATE:stop_date}}. Send all payments due on or after that date to the new servicer.
 
-New servicer contact: {{SLOT:PERSON_NAME:contact}}, {{SLOT:PHONE:phone}},
-{{SLOT:EMAIL:email}}. Payments by wire should use routing number
-{{SLOT:ABA_ROUTING:routing}} and account {{SLOT:US_ACCOUNT_NUM:account}}.
+New servicer contact: {{SLOT:PERSON_NAME:contact}}, {{SLOT:PHONE:phone}}, {{SLOT:EMAIL:email}}. Payments by wire should use routing number {{SLOT:ABA_ROUTING:routing}} and account {{SLOT:US_ACCOUNT_NUM:account}}.
 
-The new servicer's taxpayer identification number is {{SLOT:EIN:ein}} and its originator
-identifier is NMLS {{SLOT:NMLS_ID:nmls}}.
+The new servicer's taxpayer identification number is {{SLOT:EIN:ein}} and its originator identifier is NMLS {{SLOT:NMLS_ID:nmls}}.
 
-Your automatic payment authorization drawing on card ending
-{{SLOT:CREDIT_CARD:card}} will not transfer and must be re-established.
+Your automatic payment authorization drawing on card ending {{SLOT:CREDIT_CARD:card}} will not transfer and must be re-established. 

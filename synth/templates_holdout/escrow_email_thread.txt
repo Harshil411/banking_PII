@@ -1,0 +1,18 @@
+From: {{SLOT:EMAIL:agent_email}}
+To: {{SLOT:EMAIL:email}}
+Date: {{SLOT:DATE:sent_date}}
+Subject: Re: escrow shortage on {{SLOT:LOAN_NUMBER:loan}}
+
+Hi {{SLOT:PERSON_NAME:borrower}},
+
+Thanks for the call this morning. As discussed, the shortage of {{SLOT:MONEY:shortage}} came from the county tax bill paid on {{SLOT:DATE:tax_date}}, which was higher than the prior year. The rate on your note ({{DISTRACTOR:rate}}) is not changing, only the escrow portion.
+
+If you would like to pay the shortage now rather than spread it over {{DISTRACTOR:term}}, you can wire it using ABA {{SLOT:ABA_ROUTING:routing}}, acct {{SLOT:US_ACCOUNT_NUM:account}}. Please put the loan number in the memo line.
+
+Best,
+{{SLOT:PERSON_NAME:agent}}
+Escrow Services | {{SLOT:PHONE:phone}}
+NMLS {{SLOT:NMLS_ID:nmls}}
+
+> On {{SLOT:DATE:prior_date}}, {{SLOT:PERSON_NAME:borrower}} wrote:
+> My payment went up to {{SLOT:MONEY:new_payment}} and nobody told me why. Can someone explain?

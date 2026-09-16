@@ -437,7 +437,7 @@ DISTRACTORS_BY_CATEGORY: dict[str, tuple[tuple[str, str], ...]] = {
         ("CASE-2024-001847", "servicing case reference"),
         ("Batch 00471", "posting batch number"),
         ("Doc ID 55510412", "imaging system document id"),
-        ("Tier 2", "internal workflow tier"),
+        ("Priority 2", "internal workflow priority"),
         ("QUEUE-4471", "workflow queue reference"),
     ),
 }

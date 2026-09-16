@@ -15,8 +15,6 @@ Late fee if paid after grace {{SLOT:MONEY:late_fee}}
 
 Remaining term is {{DISTRACTOR:term}}. Delinquency information appears on the reverse.
 
-Questions about this statement may be sent to {{SLOT:EMAIL:email}} or called in to
-{{SLOT:PHONE:phone}}. Correspondence regarding an error must be sent separately to the
-address designated for notices of error.
+Questions about this statement may be sent to {{SLOT:EMAIL:email}} or called in to {{SLOT:PHONE:phone}}. Correspondence regarding an error must be sent separately to the address designated for notices of error.
 
 Batch reference {{DISTRACTOR:reference}}.

@@ -9,20 +9,13 @@ RE: Loan Number {{SLOT:LOAN_NUMBER:loan}}
 
 Dear {{SLOT:PERSON_NAME:borrower}},
 
-We have completed our review of the loss mitigation application you submitted on
-{{SLOT:DATE:app_date}}. Based on the documentation received, including the {{DISTRACTOR:form}} you
-provided, we are able to offer a trial period plan.
+We have completed our review of the loss mitigation application you submitted on {{SLOT:DATE:app_date}}. Based on the documentation received, including the {{DISTRACTOR:form}} you provided, we are able to offer a trial period plan.
 
-Your trial period payment will be {{SLOT:MONEY:trial_payment}}, due on the first of each month
-beginning {{SLOT:DATE:first_due}}. The current unpaid principal balance is
-{{SLOT:MONEY:upb}}. Please note that the {{DISTRACTOR:term}} term of the modified loan will be
-extended.
+Your trial period payment will be {{SLOT:MONEY:trial_payment}}, due on the first of each month beginning {{SLOT:DATE:first_due}}. The current unpaid principal balance is {{SLOT:MONEY:upb}}. Please note that the {{DISTRACTOR:term}} term of the modified loan will be extended.
 
-If you wish to make payments electronically, our receiving institution routing number is
-{{SLOT:ABA_ROUTING:routing}} and the payment account is {{SLOT:US_ACCOUNT_NUM:account}}.
+If you wish to make payments electronically, our receiving institution routing number is {{SLOT:ABA_ROUTING:routing}} and the payment account is {{SLOT:US_ACCOUNT_NUM:account}}.
 
-Questions may be directed to your assigned single point of contact,
-{{SLOT:PERSON_NAME:spoc}}, at {{SLOT:PHONE:phone}} or {{SLOT:EMAIL:email}}.
+Questions may be directed to your assigned single point of contact, {{SLOT:PERSON_NAME:spoc}}, at {{SLOT:PHONE:phone}} or {{SLOT:EMAIL:email}}.
 
 Sincerely,
 Loss Mitigation Department

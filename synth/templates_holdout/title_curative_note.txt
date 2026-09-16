@@ -1,0 +1,11 @@
+TITLE CURATIVE - FILE NOTE
+
+Opened {{SLOT:DATE:opened}} | Property {{SLOT:STREET_ADDRESS:prop_addr}}, {{SLOT:CITY:prop_city}}, {{SLOT:US_STATE:prop_state}} {{SLOT:ZIP:prop_zip}}
+
+The title search returned an unreleased prior lien in favor of a lender that has since merged. Borrower {{SLOT:PERSON_NAME:borrower}} was advised on {{SLOT:DATE:advised}} that the payoff of {{SLOT:MONEY:payoff}} was received but a release was never recorded.
+
+Contacted the successor servicer's lien release desk at {{SLOT:PHONE:phone}}; they confirmed the loan was paid in full and will record a release within thirty days. Their payoff confirmation references wire routing {{SLOT:ABA_ROUTING:routing}}.
+
+Current loan with us: {{SLOT:LOAN_NUMBER:loan}}, registered to MIN {{SLOT:MERS_MIN:min}}. Settlement agent tax ID {{SLOT:EIN:ein}}. Borrower paid the recording fee of {{SLOT:MONEY:fee}} by card ending {{SLOT:CREDIT_CARD:card}}.
+
+Follow up by {{SLOT:DATE:follow_up}}. Escalate to {{SLOT:PERSON_NAME:supervisor}} if not recorded. Contact the borrower at {{SLOT:EMAIL:email}}.

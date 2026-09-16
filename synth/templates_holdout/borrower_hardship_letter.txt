@@ -1,0 +1,12 @@
+{{SLOT:DATE:letter_date}}
+
+To whom it may concern,
+
+My name is {{SLOT:PERSON_NAME:borrower}} and I am writing about my mortgage, loan {{SLOT:LOAN_NUMBER:loan}}, on the house at {{SLOT:STREET_ADDRESS:addr}} in {{SLOT:CITY:city}}, {{SLOT:US_STATE:state}}. I fell behind after my hours were cut in the spring and I am asking to be considered for a modification.
+
+I have been paying what I can. On {{SLOT:DATE:partial_date}} I sent {{SLOT:MONEY:partial}} from my checking account, number {{SLOT:US_ACCOUNT_NUM:account}}, and I am not sure it was applied. My wife {{SLOT:PERSON_NAME:spouse}} is also on the loan. Her Social Security number is {{SLOT:SSN:ssn}} if you need it to look us up.
+
+You can reach me at {{SLOT:PHONE:phone}} after five, or by email at {{SLOT:EMAIL:email}}. I have attached my last two pay stubs and the {{DISTRACTOR:form}} your office asked for.
+
+Thank you for your time,
+{{SLOT:PERSON_NAME:borrower}}

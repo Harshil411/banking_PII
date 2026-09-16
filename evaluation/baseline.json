@@ -1,0 +1,500 @@
+{
+  "engine": "presidio",
+  "taxonomy_version": "1.0.0",
+  "commit": "303d97b",
+  "date": "2026-09-16",
+  "splits": {
+    "in_distribution": {
+      "corpus": {
+        "path": "data/corpus/frozen",
+        "seed": 20260915,
+        "sha256": "61cca2afba182ec4a9ff281cab1f2d04b1ba4feeb22321ad40782ab6697bc73c",
+        "templates": [
+          "call_center_note",
+          "collection_call_log",
+          "escrow_analysis",
+          "loss_mitigation_letter",
+          "modification_approval",
+          "notice_of_error_response",
+          "payoff_demand",
+          "periodic_statement",
+          "request_for_information_response",
+          "servicing_transfer_notice"
+        ],
+        "spans": 2376
+      },
+      "documents": 120,
+      "strict": {
+        "micro": {
+          "precision": 0.9819,
+          "recall": 0.9723,
+          "f1": 0.9771,
+          "tp": 1897,
+          "fp": 35,
+          "fn": 54,
+          "support": 1951
+        },
+        "macro_f1": 0.9701
+      },
+      "relaxed": {
+        "micro": {
+          "precision": 0.984,
+          "recall": 0.9744,
+          "f1": 0.9791,
+          "tp": 1901,
+          "fp": 31,
+          "fn": 50,
+          "support": 1951
+        }
+      },
+      "per_type": {
+        "ABA_ROUTING": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 39,
+          "fp": 0,
+          "fn": 0,
+          "support": 39,
+          "relaxed_f1": 1.0
+        },
+        "CITY": {
+          "precision": 0.9554,
+          "recall": 0.8106,
+          "f1": 0.877,
+          "tp": 107,
+          "fp": 5,
+          "fn": 25,
+          "support": 132,
+          "relaxed_f1": 0.877
+        },
+        "CREDIT_CARD": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 22,
+          "fp": 0,
+          "fn": 0,
+          "support": 22,
+          "relaxed_f1": 1.0
+        },
+        "CREDIT_SCORE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 24,
+          "fp": 0,
+          "fn": 0,
+          "support": 24,
+          "relaxed_f1": 1.0
+        },
+        "DATE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 360,
+          "fp": 0,
+          "fn": 0,
+          "support": 360,
+          "relaxed_f1": 1.0
+        },
+        "EIN": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 31,
+          "fp": 0,
+          "fn": 0,
+          "support": 31,
+          "relaxed_f1": 1.0
+        },
+        "EMAIL": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 104,
+          "fp": 0,
+          "fn": 0,
+          "support": 104,
+          "relaxed_f1": 1.0
+        },
+        "ITIN": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 11,
+          "fp": 0,
+          "fn": 0,
+          "support": 11,
+          "relaxed_f1": 1.0
+        },
+        "LOAN_NUMBER": {
+          "precision": 0.97,
+          "recall": 0.8981,
+          "f1": 0.9327,
+          "tp": 97,
+          "fp": 3,
+          "fn": 11,
+          "support": 108,
+          "relaxed_f1": 0.9327
+        },
+        "MERS_MIN": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 49,
+          "fp": 0,
+          "fn": 0,
+          "support": 49,
+          "relaxed_f1": 1.0
+        },
+        "MONEY": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 241,
+          "fp": 0,
+          "fn": 0,
+          "support": 241,
+          "relaxed_f1": 1.0
+        },
+        "NMLS_ID": {
+          "precision": 0.8814,
+          "recall": 1.0,
+          "f1": 0.9369,
+          "tp": 52,
+          "fp": 7,
+          "fn": 0,
+          "support": 52,
+          "relaxed_f1": 0.9369
+        },
+        "PERSON_NAME": {
+          "precision": 0.9547,
+          "recall": 0.9667,
+          "f1": 0.9607,
+          "tp": 232,
+          "fp": 11,
+          "fn": 8,
+          "support": 240,
+          "relaxed_f1": 0.9772
+        },
+        "PHONE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 114,
+          "fp": 0,
+          "fn": 0,
+          "support": 114,
+          "relaxed_f1": 1.0
+        },
+        "SSN": {
+          "precision": 0.9091,
+          "recall": 1.0,
+          "f1": 0.9524,
+          "tp": 20,
+          "fp": 2,
+          "fn": 0,
+          "support": 20,
+          "relaxed_f1": 0.9524
+        },
+        "STREET_ADDRESS": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 132,
+          "fp": 0,
+          "fn": 0,
+          "support": 132,
+          "relaxed_f1": 1.0
+        },
+        "US_ACCOUNT_NUM": {
+          "precision": 0.8235,
+          "recall": 0.7368,
+          "f1": 0.7778,
+          "tp": 28,
+          "fp": 6,
+          "fn": 10,
+          "support": 38,
+          "relaxed_f1": 0.7778
+        },
+        "US_STATE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 132,
+          "fp": 0,
+          "fn": 0,
+          "support": 132,
+          "relaxed_f1": 1.0
+        },
+        "ZIP": {
+          "precision": 0.9903,
+          "recall": 1.0,
+          "f1": 0.9951,
+          "tp": 102,
+          "fp": 1,
+          "fn": 0,
+          "support": 102,
+          "relaxed_f1": 0.9951
+        }
+      },
+      "adversarial": {
+        "total": 161,
+        "rejected": 161,
+        "relabelled": 11,
+        "rejection_rate": 1.0
+      },
+      "distractors": {
+        "total": 264,
+        "claimed": 7,
+        "claim_rate": 0.0265
+      },
+      "latency_ms": {
+        "note": "in-process, one document at a time, single thread; not an HTTP benchmark",
+        "machine": "Darwin arm64, Python 3.14.7",
+        "p50": 17.0,
+        "p95": 19.61,
+        "max": 28.68
+      }
+    },
+    "held_out": {
+      "corpus": {
+        "path": "data/corpus/holdout",
+        "seed": 20260916,
+        "sha256": "93d7ecc66beccb014dc19f7c82ad6d3e5c49e20e185c0cdcda0fdf5b58503076",
+        "templates": [
+          "bankruptcy_referral_memo",
+          "borrower_hardship_letter",
+          "escrow_email_thread",
+          "title_curative_note"
+        ],
+        "spans": 2070
+      },
+      "documents": 120,
+      "strict": {
+        "micro": {
+          "precision": 0.9812,
+          "recall": 0.9735,
+          "f1": 0.9773,
+          "tp": 1724,
+          "fp": 33,
+          "fn": 47,
+          "support": 1771
+        },
+        "macro_f1": 0.9797
+      },
+      "relaxed": {
+        "micro": {
+          "precision": 0.9863,
+          "recall": 0.9785,
+          "f1": 0.9824,
+          "tp": 1733,
+          "fp": 24,
+          "fn": 38,
+          "support": 1771
+        }
+      },
+      "per_type": {
+        "ABA_ROUTING": {
+          "precision": 0.9792,
+          "recall": 1.0,
+          "f1": 0.9895,
+          "tp": 47,
+          "fp": 1,
+          "fn": 0,
+          "support": 47,
+          "relaxed_f1": 0.9895
+        },
+        "CITY": {
+          "precision": 0.9457,
+          "recall": 0.9667,
+          "f1": 0.956,
+          "tp": 87,
+          "fp": 5,
+          "fn": 3,
+          "support": 90,
+          "relaxed_f1": 0.956
+        },
+        "CREDIT_CARD": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 26,
+          "fp": 0,
+          "fn": 0,
+          "support": 26,
+          "relaxed_f1": 1.0
+        },
+        "DATE": {
+          "precision": 1.0,
+          "recall": 0.997,
+          "f1": 0.9985,
+          "tp": 329,
+          "fp": 0,
+          "fn": 1,
+          "support": 330,
+          "relaxed_f1": 0.9985
+        },
+        "EIN": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 55,
+          "fp": 0,
+          "fn": 0,
+          "support": 55,
+          "relaxed_f1": 1.0
+        },
+        "EMAIL": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 118,
+          "fp": 0,
+          "fn": 0,
+          "support": 118,
+          "relaxed_f1": 1.0
+        },
+        "ITIN": {
+          "precision": 0.9615,
+          "recall": 1.0,
+          "f1": 0.9804,
+          "tp": 25,
+          "fp": 1,
+          "fn": 0,
+          "support": 25,
+          "relaxed_f1": 0.9804
+        },
+        "LOAN_NUMBER": {
+          "precision": 0.9103,
+          "recall": 0.7474,
+          "f1": 0.8208,
+          "tp": 71,
+          "fp": 7,
+          "fn": 24,
+          "support": 95,
+          "relaxed_f1": 0.8208
+        },
+        "MERS_MIN": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 47,
+          "fp": 0,
+          "fn": 0,
+          "support": 47,
+          "relaxed_f1": 1.0
+        },
+        "MONEY": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 181,
+          "fp": 0,
+          "fn": 0,
+          "support": 181,
+          "relaxed_f1": 1.0
+        },
+        "NMLS_ID": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 22,
+          "fp": 0,
+          "fn": 0,
+          "support": 22,
+          "relaxed_f1": 1.0
+        },
+        "PERSON_NAME": {
+          "precision": 0.9559,
+          "recall": 0.94,
+          "f1": 0.9479,
+          "tp": 282,
+          "fp": 13,
+          "fn": 18,
+          "support": 300,
+          "relaxed_f1": 0.9782
+        },
+        "PHONE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 110,
+          "fp": 0,
+          "fn": 0,
+          "support": 110,
+          "relaxed_f1": 1.0
+        },
+        "SSN": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 46,
+          "fp": 0,
+          "fn": 0,
+          "support": 46,
+          "relaxed_f1": 1.0
+        },
+        "STREET_ADDRESS": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 90,
+          "fp": 0,
+          "fn": 0,
+          "support": 90,
+          "relaxed_f1": 1.0
+        },
+        "US_ACCOUNT_NUM": {
+          "precision": 0.9032,
+          "recall": 0.9825,
+          "f1": 0.9412,
+          "tp": 56,
+          "fp": 6,
+          "fn": 1,
+          "support": 57,
+          "relaxed_f1": 0.9412
+        },
+        "US_STATE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 83,
+          "fp": 0,
+          "fn": 0,
+          "support": 83,
+          "relaxed_f1": 1.0
+        },
+        "ZIP": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "tp": 49,
+          "fp": 0,
+          "fn": 0,
+          "support": 49,
+          "relaxed_f1": 1.0
+        }
+      },
+      "adversarial": {
+        "total": 149,
+        "rejected": 149,
+        "relabelled": 15,
+        "rejection_rate": 1.0
+      },
+      "distractors": {
+        "total": 150,
+        "claimed": 0,
+        "claim_rate": 0.0
+      },
+      "latency_ms": {
+        "note": "in-process, one document at a time, single thread; not an HTTP benchmark",
+        "machine": "Darwin arm64, Python 3.14.7",
+        "p50": 16.45,
+        "p95": 17.42,
+        "max": 18.03
+      }
+    }
+  }
+}

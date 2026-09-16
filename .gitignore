@@ -3,6 +3,7 @@
 # not a gate. Everything else is reproducible from a seed and a manifest.
 data/corpus/*
 !data/corpus/frozen/
+!data/corpus/holdout/
 
 # Python
 __pycache__/
