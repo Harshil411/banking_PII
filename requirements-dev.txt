@@ -1,0 +1,11 @@
+-r requirements.txt
+
+pytest==9.1.1
+hypothesis==6.168.0
+httpx==0.28.1
+
+# Synthetic corpus generation. Not needed at runtime -- the container
+# ships the frozen corpus, not the generator.
+Faker==40.39.0
+
+ruff==0.14.6

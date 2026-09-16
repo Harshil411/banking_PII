@@ -1,0 +1,409 @@
+# US mortgage / loan-servicing PII taxonomy.
+#
+# This file is the single source of truth for four consumers:
+#   1. runtime validation          (app/core/taxonomy.py -> app/validate/)
+#   2. the synthetic generator     (synth/providers.py)
+#   3. the evaluation label set    (eval harness, later)
+#   4. the PSI drift bin space     (drift monitor, later)
+#
+# Bump `version` whenever the label space changes. Drift comparisons are
+# only meaningful between identical label spaces; the version is echoed in
+# every API response so a mismatch is detectable rather than silent.
+#
+# ---------------------------------------------------------------------------
+# TIER MEANS: strength of evidence that a span is a true instance of the type.
+# It does NOT mean "what kind of detector produced it".
+#
+#   tier 1  arithmetic proof. A check digit or an issuing-authority rule can
+#           demonstrate the value is impossible. Rejection is a fact.
+#   tier 2  deterministic structural rules that can reject values which pass
+#           the pattern. Rejection is a well-founded judgement.
+#   tier 3  contextual or statistical evidence only. No rule can confirm the
+#           span; a regex may still produce it (see CREDIT_SCORE), but passing
+#           that regex is weak evidence.
+#
+# Consequence worth stating plainly: a tier-3 entity may come from a regex and
+# a tier-2 entity may come from a model. The tier describes the evidence, not
+# the mechanism.
+# ---------------------------------------------------------------------------
+#
+# Regexes are SCANNER form: unanchored, used with finditer over whole
+# documents. The anchored validator form is derived at load time by wrapping
+# in \A(?:...)\z -- authoring both by hand lets them drift apart.
+#
+# All patterns are single-quoted YAML scalars, which do not process escape
+# sequences. This is deliberate: v1 stored its patterns in Python string
+# literals, double-escaped them, and every one of them silently matched
+# nothing for the life of the project.
+
+version: "1.0.0"
+
+entities:
+
+  # =========================================================================
+  # TIER 1 -- provable by arithmetic
+  # =========================================================================
+
+  SSN:
+    tier: 1
+    description: >-
+      US Social Security Number. Accepts hyphen, space or no separator.
+      Bare nine-digit runs are genuinely ambiguous with routing and account
+      numbers; that ambiguity is resolved in arbitration, not here.
+    regex: '\b\d{3}[- ]?\d{2}[- ]?\d{4}\b'
+    validator: ssn
+    generator: ssn
+    examples:
+      - "078-05-1120"
+      - "219 09 9999"
+      - "457551275"
+    counter_examples:
+      - "000-12-3456"    # area 000 never issued
+      - "666-12-3456"    # area 666 never issued
+      - "900-12-3456"    # 900-999 reserved for ITIN space
+      - "123-00-4567"    # group 00 never issued
+      - "123-45-0000"    # serial 0000 never issued
+
+  ABA_ROUTING:
+    tier: 1
+    description: >-
+      ABA routing transit number. Nine digits with a weighted mod-10 check
+      (3-7-1) and a constrained leading pair identifying the Federal Reserve
+      district.
+    regex: '\b\d{9}\b'
+    validator: aba_routing
+    generator: aba_routing
+    examples:
+      - "011000015"      # FRB Boston
+      - "121000248"      # Wells Fargo
+      - "021000021"      # JPMorgan Chase
+    counter_examples:
+      - "011000016"      # checksum fails
+      - "123456789"      # checksum fails
+      - "991000015"      # leading pair 99 is not an assigned range
+
+  CREDIT_CARD:
+    tier: 1
+    description: >-
+      Payment card number. Brand-prefixed to keep the scanner from claiming
+      every long digit run; Luhn then proves or disproves the candidate.
+    regex: '\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6(?:011|5\d{2}))[- ]?\d{4}[- ]?\d{4}[- ]?\d{1,4}\b'
+    validator: credit_card
+    generator: credit_card
+    examples:
+      - "4111 1111 1111 1111"
+      - "5500-0000-0000-0004"
+      - "6011000000000004"
+    counter_examples:
+      - "4111 1111 1111 1112"   # Luhn fails
+      - "5500-0000-0000-0005"   # Luhn fails
+
+  MERS_MIN:
+    tier: 1
+    description: >-
+      MERS Mortgage Identification Number. Eighteen digits: a 7-digit MERS
+      Org ID, a 10-digit loan sequence, and a mod-10 check digit over the
+      preceding seventeen.
+
+      SPEC PROVENANCE: the check digit is the standard Mod 10 (Luhn) over the
+      17-digit base, per MERS System Procedures Manual, "MIN Configuration".
+      This is the one tier-1 validator with no readily available public
+      corpus of known-good values, so generator and validator must not share
+      an implementation -- see synth/providers.py, which constructs the check
+      digit forward rather than importing the validator.
+    regex: '\b\d{7}-?\d{10}-?\d\b'
+    validator: mers_min
+    generator: mers_min
+    examples:
+      - "100002300000000018"
+      - "1000023-0000000001-8"
+      - "100030200048392011"
+    counter_examples:
+      - "100002300000000019"    # check digit wrong
+      - "100030200048392012"    # check digit wrong
+      - "000000000000000000"    # Org ID 0000000 is not allocated
+
+  # =========================================================================
+  # TIER 2 -- deterministic structural rules
+  # =========================================================================
+
+  EIN:
+    tier: 2
+    description: >-
+      Employer Identification Number. The two-digit prefix identifies the
+      issuing IRS campus, and a well-defined set of prefixes has never been
+      assigned -- which is what lets this reject values the pattern accepts.
+    regex: '\b\d{2}-\d{7}\b'
+    validator: ein
+    generator: ein
+    examples:
+      - "13-1234567"
+      - "95-7654321"
+    counter_examples:
+      - "00-1234567"    # prefix 00 never assigned
+      - "07-1234567"    # prefix 07 never assigned
+      - "89-1234567"    # prefix 89 never assigned
+
+  ITIN:
+    tier: 2
+    description: >-
+      Individual Taxpayer Identification Number. Always begins with 9; the
+      middle group is restricted to four published ranges. Relevant in
+      servicing because ITIN borrowers appear in non-QM portfolios.
+    regex: '\b9\d{2}-\d{2}-\d{4}\b'
+    validator: itin
+    generator: itin
+    examples:
+      - "912-70-1234"
+      - "998-94-5678"
+    counter_examples:
+      - "912-69-1234"   # group 69 outside the assigned ranges
+      - "912-93-1234"   # group 93 outside the assigned ranges
+
+  PHONE:
+    tier: 2
+    description: >-
+      North American Numbering Plan number. Area code and exchange must each
+      begin 2-9; N11 codes are service codes, not subscriber numbers.
+    # A leading \b cannot anchor this: the position before "(" is not a word
+    # boundary, so \b would silently shift the match past the opening paren.
+    # A digit lookbehind/lookahead pair does the job the boundary cannot.
+    regex: '(?<!\d)(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}(?!\d)'
+    validator: nanp_phone
+    generator: phone
+    examples:
+      - "(415) 555-0142"
+      - "415-555-0142"
+      - "+1 415 555 0142"
+    counter_examples:
+      - "(115) 555-0142"   # area code cannot begin with 1
+      - "(411) 555-0142"   # N11 service code
+      - "(415) 155-0142"   # exchange cannot begin with 1
+
+  EMAIL:
+    tier: 2
+    description: >-
+      Email address. The validator enforces the structural rules the scanner
+      pattern is too permissive to express.
+    regex: '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
+    validator: email
+    generator: email
+    examples:
+      - "j.doe@example.com"
+      - "borrower_1@servicer.example.org"
+    counter_examples:
+      - "j..doe@example.com"    # consecutive dots in local part
+      - ".jdoe@example.com"     # local part cannot start with a dot
+
+  ZIP:
+    tier: 2
+    description: >-
+      US postal code, five digit or ZIP+4. Assigned codes run 00501-99950.
+    regex: '\b\d{5}(?:-\d{4})?\b'
+    validator: zip_code
+    generator: zip_code
+    examples:
+      - "02101"
+      - "94105-1804"
+    counter_examples:
+      - "00000"          # below the assigned range
+      - "00123"          # below 00501
+      - "99999"          # above 99950
+      - "94105-0000"     # +4 segment all zeros is not assigned
+
+  US_ACCOUNT_NUM:
+    tier: 2
+    description: >-
+      Deposit or escrow account number, 8-17 digits. Deliberately excludes
+      18 digits so it cannot collide with MERS_MIN. It DOES collide with
+      ABA_ROUTING at nine digits, which is correct -- arbitration resolves
+      that using validator outcomes rather than pattern precedence.
+    regex: '\b\d{8,17}\b'
+    validator: us_account_num
+    generator: us_account_num
+    examples:
+      - "483920117"
+      - "00123456789012"
+    counter_examples:
+      - "00000000"       # all same digit
+      - "12345678"       # strictly sequential
+      - "1111111111"     # all same digit
+
+  LOAN_NUMBER:
+    tier: 2
+    description: >-
+      Servicer loan number. There is no industry-wide format, so this type is
+      context-gated: the pattern alone is far too broad, and a candidate is
+      only admitted when a loan-context word appears nearby.
+    regex: '\b[A-Z]{0,3}\d{7,12}\b'
+    validator: loan_number
+    generator: loan_number
+    context_words: ["loan", "loan number", "loan #", "note", "mortgage", "account number"]
+    examples:
+      - "0012345678"
+      - "LN4839201"
+    counter_examples:
+      - "0000000000"     # all same digit
+      - "ABCD12345678"   # more than three leading letters
+
+  NMLS_ID:
+    tier: 2
+    description: >-
+      Nationwide Multistate Licensing System identifier for a loan originator
+      or company. Context-gated: bare 4-7 digit runs are meaningless without
+      an NMLS marker.
+
+      Note this is an identifier that is deliberately PUBLIC -- NMLS Consumer
+      Access publishes it. It is tracked so it can be recognised, not
+      necessarily so it can be redacted; see DECISIONS.md on identifiability
+      versus sensitivity.
+    regex: '\b\d{4,7}\b'
+    validator: nmls_id
+    generator: nmls_id
+    context_words: ["nmls", "nmls id", "nmls #", "originator", "mlo"]
+    examples:
+      - "167890"
+      - "1234567"
+    counter_examples:
+      - "0000"           # all same digit
+      - "000000"         # all same digit
+
+  US_STATE:
+    tier: 2
+    description: >-
+      US state, DC, or territory. Closed-set membership, which is what makes
+      this tier 2 rather than tier 3.
+
+      It also earns its place operationally: spaCy emits GPE for cities and
+      states alike, so something has to disambiguate them. A closed set does
+      that deterministically where the model cannot.
+
+      Bare two-letter abbreviations are only matched when followed by a ZIP,
+      because "OR", "IN", "ME", "HI" and "OK" are ordinary English words and
+      an unguarded pattern would claim them throughout the prose.
+    regex: '\b(?:Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming|District of Columbia|Puerto Rico)\b|\b[A-Z]{2}(?=,?\s+\d{5}(?:-\d{4})?\b)'
+    validator: us_state
+    generator: us_state
+    # The abbreviation branch is a lookahead, so a bare "CA" cannot be matched
+    # against the anchored form on its own. The contract test embeds examples
+    # here instead.
+    test_context: "Sacramento, {} 95814"
+    examples:
+      - "California"
+      - "New Hampshire"
+      - "District of Columbia"
+      - "CA"
+    counter_examples:
+      - "XX"             # shape-valid abbreviation, not an assigned state
+      - "ZZ"             # shape-valid abbreviation, not an assigned state
+      - "Ontario"        # not a US state
+
+  MONEY:
+    tier: 2
+    description: >-
+      Currency amount. Sits in tier 2 rather than tier 3 because a leading
+      currency symbol plus correct thousands grouping is deterministic
+      evidence, and the validator rejects amounts the pattern admits --
+      malformed grouping and sub-cent precision.
+
+      This is the clearest illustration of the tier definition: MONEY is not
+      an identifier, but the evidence that a span IS a currency amount is
+      structural, and tier describes evidence.
+    # Written as one branch with a trailing digit-guard rather than two
+    # alternatives: ordered alternation let the grouped branch match a 3-digit
+    # prefix of an ungrouped amount, truncating "$1234.56" to "$123".
+    regex: '\$\s?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?!\d)'
+    validator: money
+    generator: money
+    examples:
+      - "$1,204.55"
+      - "$250,000.00"
+      - "$42"
+    counter_examples:
+      - "$1,23.45"       # malformed thousands grouping
+      - "$1,2345.00"     # malformed thousands grouping
+      - "$10.123"        # sub-cent precision
+
+  # =========================================================================
+  # TIER 3 -- contextual evidence only
+  # =========================================================================
+
+  PERSON_NAME:
+    tier: 3
+    description: >-
+      Borrower, co-borrower, or servicer-staff name. One type, not three.
+
+      v1 split this into GIVENNAME, SURNAME and FULLNAME and gave the first
+      two byte-identical regexes -- the model was asked to learn a
+      distinction the schema declared did not exist, and scored F1 0.46 and
+      0.12 on them. Redaction does not need to know which part is the
+      surname.
+    regex: null
+    validator: null
+    generator: person_name
+    examples:
+      - "Maria Delgado"
+      - "James P. O'Connor"
+    counter_examples: []
+
+  STREET_ADDRESS:
+    tier: 3
+    description: >-
+      Street line of a property or mailing address. A regex produces good
+      candidates here, but matching a street suffix is weak evidence that
+      the span is an address -- so this is tier 3 despite having a pattern.
+    regex: '\b\d{1,6}\s+(?:[A-Z][A-Za-z.''-]*\s+){0,4}(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Court|Ct|Circle|Cir|Way|Place|Pl|Terrace|Ter|Parkway|Pkwy|Highway|Hwy)\b\.?'
+    validator: null
+    generator: street_address
+    examples:
+      - "4417 Kingsley Terrace"
+      - "88 Oak Street"
+    counter_examples: []
+
+  CITY:
+    tier: 3
+    description: >-
+      City name. Model-carried, then disambiguated against the US_STATE
+      closed set because spaCy labels both as GPE.
+    regex: null
+    validator: null
+    generator: city
+    examples:
+      - "Sacramento"
+      - "Fort Worth"
+    counter_examples: []
+
+  DATE:
+    tier: 3
+    description: >-
+      Calendar date. Numeric dates could be calendar-validated, but a
+      syntactically valid date string is weak evidence that the span is a
+      date ENTITY rather than a version, ratio or section number -- and
+      prose dates ("the fifteenth") carry no structure at all. Tier follows
+      the weaker case.
+    regex: '\b(?:0?[1-9]|1[0-2])[/-](?:0?[1-9]|[12]\d|3[01])[/-](?:19|20)\d{2}\b'
+    validator: null
+    generator: date
+    examples:
+      - "03/15/2024"
+      - "12-01-2023"
+    counter_examples: []
+
+  CREDIT_SCORE:
+    tier: 3
+    description: >-
+      Consumer credit score. Range-checkable (300-850) and context-gated,
+      yet still tier 3: every three-digit number in that range passes, so
+      the range is a filter rather than evidence.
+
+      Whether a credit score is PII at all is arguable -- it does not
+      identify anyone on its own, but it is FCRA-regulated consumer report
+      information. Tracked here, redaction policy decided separately.
+    regex: '\b(?:[3-7]\d{2}|8[0-4]\d|850)\b'
+    validator: null
+    generator: credit_score
+    context_words: ["fico", "credit score", "score", "bureau", "equifax", "experian", "transunion"]
+    examples:
+      - "742"
+      - "681"
+    counter_examples: []

@@ -1,0 +1,98 @@
+{
+  "_provenance": "Values sourced from outside this project on purpose. If the only evidence a validator were correct came from the generator in synth/, a shared misreading of a specification would be invisible in both. These are published third-party values that this repository did not compute.",
+
+  "aba_routing_valid": {
+    "_source": "Published Federal Reserve and commercial bank routing transit numbers.",
+    "values": [
+      ["011000015", "Federal Reserve Bank of Boston"],
+      ["021000021", "JPMorgan Chase, New York"],
+      ["026009593", "Bank of America, New York"],
+      ["121000248", "Wells Fargo"],
+      ["111000025", "Bank of America, Texas"],
+      ["322271627", "JPMorgan Chase, California"],
+      ["061000104", "Truist, Georgia"],
+      ["041000124", "PNC, Ohio"],
+      ["091000019", "U.S. Bank, Minnesota"],
+      ["071000013", "JPMorgan Chase, Illinois"]
+    ]
+  },
+
+  "aba_routing_invalid": {
+    "_source": "Single-digit perturbations of the published values above, plus leading pairs outside any assigned Federal Reserve district range.",
+    "values": [
+      ["011000016", "checksum fails"],
+      ["021000022", "checksum fails"],
+      ["121000247", "checksum fails"],
+      ["991000015", "leading pair 99 is unassigned"],
+      ["131000015", "leading pair 13 falls between assigned ranges"],
+      ["451000015", "leading pair 45 falls between assigned ranges"],
+      ["123456789", "checksum fails"]
+    ]
+  },
+
+  "luhn_valid": {
+    "_source": "Standard payment-processor test card numbers, published by Visa, Mastercard, American Express, Discover, JCB and Diners Club for use in test environments. These exercise the validator, not the scanner pattern: JCB and Diners prefixes are deliberately outside the CREDIT_CARD regex.",
+    "values": [
+      ["4111111111111111", "Visa"],
+      ["4012888888881881", "Visa"],
+      ["5555555555554444", "Mastercard"],
+      ["5105105105105100", "Mastercard"],
+      ["378282246310005", "American Express"],
+      ["371449635398431", "American Express"],
+      ["6011111111111117", "Discover"],
+      ["6011000990139424", "Discover"],
+      ["3530111333300000", "JCB"],
+      ["30569309025904", "Diners Club"]
+    ]
+  },
+
+  "luhn_invalid": {
+    "_source": "Final-digit perturbations of the published test cards above.",
+    "values": [
+      ["4111111111111112", "Visa test number, check digit altered"],
+      ["5555555555554443", "Mastercard test number, check digit altered"],
+      ["378282246310004", "Amex test number, check digit altered"],
+      ["6011111111111118", "Discover test number, check digit altered"]
+    ]
+  },
+
+  "ssn_invalid": {
+    "_source": "Ranges the Social Security Administration states have never been issued. Randomisation of assignment in 2011 removed the geographic meaning of the area number but did not retire these exclusions.",
+    "values": [
+      ["000-12-3456", "area 000 never issued"],
+      ["666-12-3456", "area 666 never issued"],
+      ["900-12-3456", "900-999 reserved for ITIN allocation"],
+      ["999-12-3456", "900-999 reserved for ITIN allocation"],
+      ["123-00-4567", "group 00 never issued"],
+      ["123-45-0000", "serial 0000 never issued"]
+    ]
+  },
+
+  "ssn_structurally_valid": {
+    "_source": "078-05-1120 is the number printed on the specimen card distributed in wallets by the E. H. Ferree Company in 1938; the SSA has published it as never validly assigned. The remainder are structurally conformant values used here only to exercise the area/group/serial rules.",
+    "values": [
+      ["078-05-1120", "SSA specimen card number"],
+      ["219-09-9999", "SSA pamphlet specimen number"],
+      ["457-55-1275", "structurally conformant"],
+      ["123-45-6789", "structurally conformant"]
+    ]
+  },
+
+  "nanp_invalid": {
+    "_source": "North American Numbering Plan administration rules: area code and exchange must each begin 2-9, and N11 codes are reserved as service codes.",
+    "values": [
+      ["(115) 555-0142", "area code cannot begin with 1"],
+      ["(015) 555-0142", "area code cannot begin with 0"],
+      ["(411) 555-0142", "N11 service code as area code"],
+      ["(911) 555-0142", "N11 service code as area code"],
+      ["(415) 155-0142", "exchange cannot begin with 1"],
+      ["(415) 011-0142", "exchange cannot begin with 0"],
+      ["(415) 411-0142", "N11 service code as exchange"]
+    ]
+  },
+
+  "ein_unassigned_prefixes": {
+    "_source": "IRS campus prefix table: these two-digit prefixes have never been assigned to an Employer Identification Number.",
+    "values": ["00", "07", "08", "09", "17", "18", "19", "28", "29", "49", "69", "70", "78", "79", "89", "96", "97"]
+  }
+}

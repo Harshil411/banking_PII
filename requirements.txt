@@ -1,0 +1,13 @@
+# Runtime dependencies. Pinned exactly: a floating dependency makes a
+# frozen evaluation set meaningless, because the number can move without
+# a commit.
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+PyYAML==6.0.3
+
+# Tier-3 candidate generation only. Presidio's span arbitration and its
+# validate_result() filtering are deliberately unused -- see DECISIONS.md.
+presidio-analyzer==2.2.364
+spacy==3.8.16
