@@ -148,6 +148,22 @@ class PresidioDetector:
 
     @staticmethod
     def _trim(text: str, start: int, end: int) -> tuple[int, int]:
+        """Trim edge punctuation and stop the span at a line break.
+
+        spaCy's NER routinely runs a PERSON span across a newline into the
+        next field of a structured document: in
+
+            Prepared for: Maria Delgado
+            Loan number: 0012345678
+
+        the PERSON span covered "Maria Delgado\nLoan", which then redacted
+        the word "Loan" out of the following label. Entity mentions of these
+        types do not contain line breaks, so the span is cut at the first one.
+        """
+        newline = text.find("\n", start, end)
+        if newline != -1:
+            end = newline
+
         while start < end and text[start] in _EDGE:
             start += 1
         while end > start and text[end - 1] in _EDGE:

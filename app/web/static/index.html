@@ -1,1 +1,299 @@
-<!doctype html><title>placeholder</title>
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mortgage PII Service</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e4e1dc;
+  --accent:#1f4f8f; --accent-soft:#eaf0f8;
+  --t1:#1c6b4a; --t1-bg:#e3f2ea; --t2:#8a5a10; --t2-bg:#fbf0dc; --t3:#4a4a52; --t3-bg:#ececf0;
+  --bad:#9a2b2b; --bad-bg:#fbeaea;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#16161a; --panel:#1e1e23; --ink:#eceaea; --muted:#9b9aa0; --line:#33333b;
+    --accent:#7aa8e0; --accent-soft:#22303f;
+    --t1:#6fd3a3; --t1-bg:#173327; --t2:#e0b35f; --t2-bg:#33280f; --t3:#b2b2bd; --t3-bg:#2a2a32;
+    --bad:#e98787; --bad-bg:#361c1c;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);
+  padding-block:0;padding-inline:0}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+header{margin:8px 0 22px}
+h1{font-size:1.45rem;margin:0 0 6px;letter-spacing:-.01em}
+.tagline{color:var(--muted);margin:0;max-width:66ch}
+.tagline b{color:var(--ink);font-weight:600}
+.banner{display:none;margin:14px 0;padding:10px 14px;border-radius:8px;
+  background:var(--accent-soft);border:1px solid var(--line);color:var(--ink);font-size:.9rem}
+.banner.show{display:block}
+.banner.err{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media(max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.panel h2{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  margin:0 0 10px;font-weight:600}
+textarea{width:100%;min-height:270px;resize:vertical;font:13px/1.6 var(--mono);
+  color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:11px}
+textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:11px}
+button{font:inherit;font-size:.88rem;padding:7px 13px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.samples{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.samples button{font-size:.8rem;padding:5px 10px;color:var(--muted)}
+.out{font:13px/1.85 var(--mono);white-space:pre-wrap;word-break:break-word;min-height:270px;
+  border:1px solid var(--line);border-radius:7px;padding:11px;background:var(--bg)}
+.out .ph{color:var(--muted);font-family:var(--sans);line-height:1.6}
+mark{padding:1px 3px;border-radius:3px;font-weight:600;cursor:help;background:var(--t3-bg);color:var(--t3)}
+mark[data-tier="1"]{background:var(--t1-bg);color:var(--t1);box-shadow:inset 0 -2px 0 var(--t1)}
+mark[data-tier="2"]{background:var(--t2-bg);color:var(--t2);box-shadow:inset 0 -2px 0 var(--t2)}
+mark[data-tier="3"]{background:var(--t3-bg);color:var(--t3);box-shadow:inset 0 -2px 0 var(--t3)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line)}
+.legend div{font-size:.8rem;color:var(--muted);max-width:30ch}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;margin-top:18px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+.stat .n{font-size:1.32rem;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat .k{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:2px}
+.section{margin-top:22px}
+.section h2{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 4px}
+.section p.note{color:var(--muted);font-size:.85rem;margin:0 0 10px;max-width:74ch}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:.84rem;min-width:620px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:none}
+td.val{font-family:var(--mono);white-space:nowrap}
+.pill{display:inline-block;font-size:.7rem;padding:1px 7px;border-radius:99px;font-weight:600;
+  background:var(--t3-bg);color:var(--t3)}
+.pill[data-tier="1"]{background:var(--t1-bg);color:var(--t1)}
+.pill[data-tier="2"]{background:var(--t2-bg);color:var(--t2)}
+.why{color:var(--bad)}
+footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:.8rem;display:flex;flex-wrap:wrap;gap:6px 16px}
+code{font-family:var(--mono);font-size:.92em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Mortgage PII Service</h1>
+  <p class="tagline">Detection and redaction for US mortgage and loan-servicing text.
+  Every span is checked against a validator, and how strong that check is shows up as a
+  <b>tier</b>. Rejections are reported with the arithmetic that caused them, not quietly dropped.</p>
+</header>
+
+<div class="banner" id="banner"></div>
+
+<div class="grid">
+  <div class="panel">
+    <h2>Input</h2>
+    <div class="samples" id="samples"></div>
+    <textarea id="text" spellcheck="false" placeholder="Paste a servicing note, letter, or payoff statement."></textarea>
+    <div class="row">
+      <button class="primary" id="detect">Detect</button>
+      <button id="redact">Detect &amp; redact</button>
+      <button id="clear">Clear</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 id="outTitle">Result</h2>
+    <div class="out" id="out"><span class="ph">Pick a sample document or paste your own, then press Detect.</span></div>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<div class="stats" id="stats" hidden></div>
+
+<div class="section" id="rejectedSection" hidden>
+  <h2>Rejected candidates</h2>
+  <p class="note">Spans that matched a pattern and were then thrown out. A tier-1 rejection is
+  arithmetic &mdash; a checksum that does not hold, an issuing range that was never allocated &mdash;
+  so it is a fact about the value, not a guess.</p>
+  <div class="tablewrap"><table id="rejected">
+    <thead><tr><th>Type</th><th>Tier</th><th>Value</th><th>Why it was rejected</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</div>
+
+<footer>
+  <span id="engine"></span>
+  <span id="version"></span>
+  <span>Synthetic data only &mdash; no real borrower records.</span>
+</footer>
+
+</div>
+
+<script src="samples.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const banner = $("banner");
+const TIER_NOTE = {
+  1: "Arithmetic. A checksum or issuing rule can prove the value impossible.",
+  2: "Structural. A deterministic rule rejects values the pattern accepts.",
+  3: "Contextual. No rule can confirm it; the evidence is the surrounding text."
+};
+let ready = false;
+
+function say(msg, isError) {
+  banner.textContent = msg;
+  banner.className = "banner show" + (isError ? " err" : "");
+}
+function hideBanner() { banner.className = "banner"; }
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+// Render the ORIGINAL text with entity spans marked, walking start/end offsets.
+// Nothing is re-matched client side: the server reports where each span is and
+// the page trusts those offsets, which is what keeps the two in agreement.
+function highlight(text, entities) {
+  const ordered = [...entities].sort((a, b) => a.start - b.start);
+  let html = "", cursor = 0;
+  for (const e of ordered) {
+    if (e.start < cursor) continue;
+    html += escapeHtml(text.slice(cursor, e.start));
+    const why = e.validation_status === "pass"
+      ? `${e.entity_type} · tier ${e.tier} · ${e.reason}`
+      : `${e.entity_type} · tier ${e.tier} · ${e.reason || "model-carried"}`;
+    html += `<mark data-tier="${e.tier}" title="${escapeHtml(why)}">${escapeHtml(text.slice(e.start, e.end))}</mark>`;
+    cursor = e.end;
+  }
+  return html + escapeHtml(text.slice(cursor));
+}
+
+function renderStats(body) {
+  const counts = body.counts_by_tier || {};
+  const cells = [
+    ["Entities", body.entities.length],
+    ["Tier 1 proven", counts.tier_1 ?? 0],
+    ["Tier 2 checked", counts.tier_2 ?? 0],
+    ["Tier 3 contextual", counts.tier_3 ?? 0],
+    ["Rejected", body.dropped.length],
+    ["Rejection rate", (body.rejection_rate * 100).toFixed(1) + "%"],
+    ["Latency", body.timing_ms.total.toFixed(1) + " ms"]
+  ];
+  $("stats").innerHTML = cells
+    .map(([k, n]) => `<div class="stat"><div class="n">${n}</div><div class="k">${k}</div></div>`)
+    .join("");
+  $("stats").hidden = false;
+}
+
+function renderRejected(rows) {
+  const body = $("rejected").querySelector("tbody");
+  body.innerHTML = rows
+    .map((e) => `<tr>
+      <td>${escapeHtml(e.entity_type)}</td>
+      <td><span class="pill" data-tier="${e.tier}">tier ${e.tier}</span></td>
+      <td class="val">${escapeHtml(e.text)}</td>
+      <td class="why">${escapeHtml(e.reason)}</td></tr>`)
+    .join("");
+  $("rejectedSection").hidden = rows.length === 0;
+}
+
+async function run(redact) {
+  const text = $("text").value;
+  if (!text.trim()) { say("Enter or pick some text first.", true); return; }
+  if (!ready) { say("The service is still warming up. Try again in a moment.", true); return; }
+
+  hideBanner();
+  for (const id of ["detect", "redact"]) $(id).disabled = true;
+  $("out").innerHTML = '<span class="ph">Analysing…</span>';
+
+  try {
+    const res = await fetch(redact ? "/v1/anonymize" : "/v1/detect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `HTTP ${res.status}`);
+    }
+    const body = await res.json();
+    $("outTitle").textContent = redact ? "Redacted" : "Detected";
+    $("out").innerHTML = redact
+      ? escapeHtml(body.redacted)
+      : highlight(text, body.entities);
+    renderStats(body);
+    renderRejected(body.dropped);
+    $("engine").textContent = `engine ${body.engine.name}`;
+    $("version").textContent = `taxonomy ${body.taxonomy_version}`;
+  } catch (err) {
+    say(err.message, true);
+    $("out").innerHTML = '<span class="ph">No result.</span>';
+  } finally {
+    for (const id of ["detect", "redact"]) $(id).disabled = false;
+  }
+}
+
+function buildLegend(entities) {
+  const byTier = { 1: [], 2: [], 3: [] };
+  for (const e of entities) if (byTier[e.tier]) byTier[e.tier].push(e.name);
+  $("legend").innerHTML = [1, 2, 3].map((t) =>
+    `<div><span class="sw" style="background:var(--t${t})"></span>
+     <b style="color:var(--ink)">Tier ${t}</b> &mdash; ${TIER_NOTE[t]}
+     <span style="display:block;margin-top:2px;opacity:.75">${byTier[t].length} types</span></div>`
+  ).join("");
+}
+
+// A free-tier container can take a while to load the spaCy model. Poll /readyz
+// and say so, rather than letting the first click look like a broken service.
+async function waitForReady(attempt = 0) {
+  try {
+    const res = await fetch("/readyz");
+    if (res.ok) {
+      const body = await res.json();
+      ready = true;
+      hideBanner();
+      $("engine").textContent = `engine ${body.engine}`;
+      $("version").textContent = `taxonomy ${body.taxonomy_version}`;
+      const tax = await (await fetch("/v1/taxonomy")).json();
+      buildLegend(tax.entities);
+      return;
+    }
+    const body = await res.json().catch(() => ({}));
+    if (body.detail && !/warming/i.test(body.detail)) {
+      say(`The service failed to start: ${body.detail}`, true);
+      return;
+    }
+  } catch (_) { /* server not up yet */ }
+  say("Starting the service and loading the model — this can take a few seconds on a cold start…");
+  if (attempt < 40) setTimeout(() => waitForReady(attempt + 1), 1500);
+  else say("The service did not become ready. Try reloading.", true);
+}
+
+(window.SAMPLES || []).forEach((sample) => {
+  const button = document.createElement("button");
+  button.textContent = sample.label;
+  button.onclick = () => { $("text").value = sample.text; hideBanner(); };
+  $("samples").appendChild(button);
+});
+
+$("detect").onclick = () => run(false);
+$("redact").onclick = () => run(true);
+$("clear").onclick = () => {
+  $("text").value = "";
+  $("out").innerHTML = '<span class="ph">Pick a sample document or paste your own, then press Detect.</span>';
+  $("stats").hidden = true;
+  $("rejectedSection").hidden = true;
+  $("outTitle").textContent = "Result";
+  hideBanner();
+};
+
+if ((window.SAMPLES || []).length) $("text").value = window.SAMPLES[0].text;
+waitForReady();
+</script>
+</body>
+</html>
