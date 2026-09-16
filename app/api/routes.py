@@ -11,6 +11,8 @@ appearing broken on a cold start.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.schemas import (
@@ -75,13 +77,11 @@ def anonymize(payload: AnonymizeRequest, request: Request) -> AnonymizeResponse:
     state = _state(request)
     _check_text(payload.text, state.settings.max_text_bytes)
 
+    # A per-request copy, never a mutation: the pipeline is shared across
+    # requests and test_the_policy_flag_does_not_leak_between_requests holds it.
     pipeline = state.pipeline
     if payload.redact_failed_tier1:
-        from dataclasses import replace as _replace
-
-        pipeline = _replace(
-            pipeline, policy=RedactionPolicy(redact_failed_tier1=True)
-        )
+        pipeline = replace(pipeline, policy=RedactionPolicy(redact_failed_tier1=True))
 
     result = pipeline.analyze(
         [payload.text],
@@ -110,6 +110,20 @@ def taxonomy(request: Request) -> TaxonomyResponse:
             for spec in state.taxonomy.entities.values()
         ],
     )
+
+
+@router.get("/v1/evaluation", tags=["evaluation"])
+def evaluation(request: Request) -> dict:
+    """The committed evaluation baseline: the numbers CI gates on.
+
+    Scored on synthetic documents this project generated, on two splits -- one
+    built from the templates the rules were tuned against, one from templates
+    never used while tuning.
+    """
+    state = _state(request)
+    if state.evaluation is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="no evaluation baseline loaded")
+    return state.evaluation
 
 
 @router.get("/healthz", response_model=HealthResponse, tags=["operations"])

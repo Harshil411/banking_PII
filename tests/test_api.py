@@ -144,7 +144,6 @@ def test_taxonomy_endpoint_describes_every_type(client):
 
 def test_healthz_does_not_depend_on_the_model(client):
     """Liveness must answer while loading, or an orchestrator restarts a warming pod."""
-    assert create_app(Settings(detector="deterministic"))
     response = TestClient(create_app(Settings(detector="deterministic"))).get("/healthz")
     assert response.status_code == 200 and response.json()["status"] == "ok"
 

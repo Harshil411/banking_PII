@@ -59,6 +59,8 @@ this is most of why.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from app.core.taxonomy import Taxonomy
 from app.core.types import Candidate, Entity, Tier, ValidationStatus
 
@@ -149,8 +151,6 @@ def _drop_fragments(
         if swallowed is None:
             kept.append(entity)
         else:
-            from dataclasses import replace
-
             fragments.append(
                 replace(
                     entity,
@@ -199,8 +199,6 @@ def arbitrate(
         if winner is None:
             kept.append(entity)
             continue
-        from dataclasses import replace
-
         dropped.append(
             replace(
                 entity,

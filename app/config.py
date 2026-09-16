@@ -31,6 +31,16 @@ class Settings(BaseSettings):
 
     taxonomy_path: Path = Field(default=PROJECT_ROOT / "taxonomy" / "entities.yaml")
 
+    #: The committed evaluation baseline, served at /v1/evaluation so the demo
+    #: page shows the numbers CI gates on rather than figures typed into HTML.
+    #: Optional: a missing file disables the endpoint, not the service.
+    evaluation_path: Path = Field(default=PROJECT_ROOT / "evaluation" / "baseline.json")
+
+    #: CSP frame-ancestors. "'self'" forbids embedding the demo in another
+    #: site's iframe, which is the safe default for a page that echoes pasted
+    #: text. Set to the portfolio origin to allow embedding there.
+    frame_ancestors: str = "'self'"
+
     #: Which detector to build. "deterministic" needs no model and starts
     #: instantly; "presidio" adds spaCy NER for the model-carried types. The
     #: evaluation harness compares engines by setting this alone.

@@ -33,6 +33,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
     PII_DETECTOR=presidio \
     PII_TAXONOMY_PATH=/srv/taxonomy/entities.yaml \
+    PII_EVALUATION_PATH=/srv/evaluation/baseline.json \
     PII_HOST=0.0.0.0 \
     PII_PORT=8000
 
@@ -43,6 +44,9 @@ COPY --from=builder /opt/venv /opt/venv
 WORKDIR /srv
 COPY app/ ./app/
 COPY taxonomy/ ./taxonomy/
+# Only the committed numbers, served at /v1/evaluation; the harness itself and
+# the corpora it scores do not ship.
+COPY evaluation/baseline.json ./evaluation/baseline.json
 
 # PII_TAXONOMY_PATH is set explicitly above rather than relying on the default
 # derived from the package directory. Inside the image app/ and taxonomy/ are
