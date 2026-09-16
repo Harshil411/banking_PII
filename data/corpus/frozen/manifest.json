@@ -4,7 +4,7 @@
   "n_docs": 120,
   "n_spans": 2376,
   "seed": 20260915,
-  "sha256": "0b373eefa2ca435e933d5201c61988cb4f06dd6e5f78d1f7868ff7d2fbaa0664",
+  "sha256": "28d9bfaafaa251c24b96a33e923a3b220ca4e4f5065496070bbdefb84f37f50b",
   "spans_by_kind": {
     "adversarial": 161,
     "distractor": 264,
