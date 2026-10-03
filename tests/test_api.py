@@ -121,6 +121,14 @@ def test_anonymize_can_redact_failed_tier_one_on_request(client):
     assert "666121234" not in body["redacted"]
 
 
+def test_redacting_failed_tier_one_survives_a_competing_reading(client):
+    """Was HTTP 500: the failed SSN and the account number claim the same digits."""
+    text = "Taxpayer SSN, credit to account 666121234 today."
+    response = client.post("/v1/anonymize", json={"text": text, "redact_failed_tier1": True})
+    assert response.status_code == 200
+    assert "666121234" not in response.json()["redacted"]
+
+
 def test_the_policy_flag_does_not_leak_between_requests(client):
     """A per-request policy must not mutate the shared pipeline."""
     text = "Taxpayer SSN 666121234 in the file."

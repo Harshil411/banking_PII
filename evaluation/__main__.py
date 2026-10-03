@@ -34,7 +34,7 @@ from datetime import date
 from pathlib import Path
 
 from app.core.arbitration import arbitrate
-from app.core.taxonomy import load_taxonomy
+from app.core.taxonomy import Taxonomy, load_taxonomy
 from app.detect.registry import build_detector
 from evaluation.scoring import SplitScore
 from synth.providers import PROVIDERS
@@ -59,14 +59,17 @@ MAX_REJECTION_RATE_DROP = 0.01
 MAX_CLAIM_RATE_RISE = 0.01
 
 
-def evaluate(engine: str) -> dict:
-    taxonomy = load_taxonomy(ROOT / "taxonomy" / "entities.yaml", known_generators=set(PROVIDERS))
+def load() -> Taxonomy:
+    return load_taxonomy(ROOT / "taxonomy" / "entities.yaml", known_generators=set(PROVIDERS))
+
+
+def evaluate(engine: str, taxonomy: Taxonomy | None = None) -> dict:
+    taxonomy = taxonomy or load()
     detector = build_detector(engine, taxonomy)
     detector.warm()
 
     report: dict = {
-        "engine": engine,
-        "taxonomy_version": taxonomy.version,
+        **_identity(engine, taxonomy),
         "commit": _commit(),
         "date": date.today().isoformat(),
         "splits": {},
@@ -124,8 +127,47 @@ def _commit() -> str:
         return "unknown"
 
 
+#: What a run must share with the baseline to be comparable at all. A different
+#: engine finds different types; a different taxonomy version is a different
+#: label space. Either way per-type differences are not regressions.
+IDENTITY = ("engine", "taxonomy_version")
+
+
+def _identity(engine: str, taxonomy: Taxonomy) -> dict:
+    """The fields in IDENTITY, as a report records them. Built in one place for both uses."""
+    return {"engine": engine, "taxonomy_version": taxonomy.version}
+
+
+def _mismatch(baseline: dict, current: dict) -> str | None:
+    """The one place the comparability rule lives; ``compare`` and ``main`` both ask it."""
+    changed = [key for key in IDENTITY if baseline.get(key) != current.get(key)]
+    if not changed:
+        return None
+    detail = ", ".join(f"{key} {baseline.get(key)} -> {current.get(key)}" for key in changed)
+    return (
+        f"not comparable ({detail}); per-type differences would reflect that change, not "
+        "a regression. Re-run with the baseline's configuration, or regenerate the "
+        "baseline deliberately"
+    )
+
+
+def _fail(failures: list[str]) -> int:
+    print("\nthe gate failed against the committed baseline:", file=sys.stderr)
+    for failure in failures:
+        print(f"  - {failure}", file=sys.stderr)
+    return 1
+
+
 def compare(current: dict, baseline: dict) -> list[str]:
     """Return a list of regressions; empty means the gate passes."""
+    # A mismatch is a comparison error, not a regression. Without this check,
+    # scoring the regex-only engine against a presidio baseline reports CITY
+    # and PERSON_NAME as collapsing -- the regex engine cannot find them at
+    # all -- and sends someone looking for a bug that does not exist.
+    mismatch = _mismatch(baseline, current)
+    if mismatch:
+        return [mismatch]
+
     failures: list[str] = []
     for split, base in baseline["splits"].items():
         now = current["splits"].get(split)
@@ -205,12 +247,25 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Score detection against the committed corpora.")
     parser.add_argument("--engine", default="presidio", choices=("presidio", "deterministic"))
     parser.add_argument("--out", type=Path, help="write the full report as JSON")
-    parser.add_argument("--write-baseline", action="store_true", help=f"write {BASELINE.name}")
-    parser.add_argument("--check", action="store_true", help="exit 1 if worse than the baseline")
+    # Exclusive: checking against a baseline this run has just overwritten
+    # compares the run with itself and always passes.
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--write-baseline", action="store_true", help=f"write {BASELINE.name}")
+    mode.add_argument("--check", action="store_true", help="exit 1 if worse than the baseline")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args(argv)
 
-    report = evaluate(args.engine)
+    baseline = json.loads(BASELINE.read_text(encoding="utf-8")) if args.check else None
+    # Without --out, a mismatch can fail before loading a model and scoring
+    # both splits. With it, the report is wanted whatever the gate says, and
+    # compare() reports the mismatch afterwards.
+    taxonomy = load()
+    if baseline is not None and not args.out:
+        mismatch = _mismatch(baseline, _identity(args.engine, taxonomy))
+        if mismatch:
+            return _fail([mismatch])
+
+    report = evaluate(args.engine, taxonomy)
     if not args.quiet:
         _print(report)
 
@@ -220,14 +275,10 @@ def main(argv: list[str] | None = None) -> int:
         BASELINE.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         print(f"\nbaseline written to {BASELINE.relative_to(ROOT)}")
 
-    if args.check:
-        baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
+    if baseline is not None:
         failures = compare(report, baseline)
         if failures:
-            print("\nREGRESSION against the committed baseline:", file=sys.stderr)
-            for failure in failures:
-                print(f"  - {failure}", file=sys.stderr)
-            return 1
+            return _fail(failures)
         print(f"\nno regression against baseline {baseline['commit']} ({baseline['date']})")
     return 0
 

@@ -43,6 +43,85 @@ def test_context_words_match_on_word_boundaries():
     assert _labels(text) == {"011000015": "ABA_ROUTING"}
 
 
+def test_context_words_match_regardless_of_case():
+    assert _labels("SOCIAL SECURITY 457551275")["457551275"] == "SSN"
+    assert _labels("Taxpayer ssn 457551275")["457551275"] == "SSN"
+
+
+@pytest.mark.parametrize("lookalike", ["ſſn", "ſsn", "Borrower ſſn"])
+def test_case_folding_does_not_admit_unicode_lookalikes(lookalike):
+    """Plain re.IGNORECASE folds "ſ" (long s) to "s"; a gate must not open on it."""
+    assert "SSN" not in _labels(f"{lookalike} 457551275").values()
+
+
+@pytest.mark.parametrize(
+    ("text", "value", "gated_type"),
+    [
+        ("Loans: 0012345678", "0012345678", "LOAN_NUMBER"),
+        ("Loaned under 0012345678", "0012345678", "LOAN_NUMBER"),
+        ("Notes 0012345678 and others", "0012345678", "LOAN_NUMBER"),
+        ("Funds wired to 011000015 today", "011000015", "ABA_ROUTING"),
+        ("Remittance to 483920117", "483920117", "US_ACCOUNT_NUM"),
+        ("Accounts 483920117 on file", "483920117", "US_ACCOUNT_NUM"),
+        ("Deposited into 483920117", "483920117", "US_ACCOUNT_NUM"),
+        ("SSNs on file: 457551275", "457551275", "SSN"),
+        ("SS#457551275", "457551275", "SSN"),
+        ("ss# 457551275", "457551275", "SSN"),
+        ("SSNum 457551275", "457551275", "SSN"),
+        ("acct_no 483920117", "483920117", "US_ACCOUNT_NUM"),
+        ("AcctNo 483920117", "483920117", "US_ACCOUNT_NUM"),
+        ("loan_id 0012345678", "0012345678", "LOAN_NUMBER"),
+        ("Lender NMLSR ID 167890 issued", "167890", "NMLS_ID"),
+        ("FICO8 742", "742", "CREDIT_SCORE"),
+        ("FICOScore 742", "742", "CREDIT_SCORE"),
+        ("0012345678" + " " * 28 + "Loans", "0012345678", "LOAN_NUMBER"),
+    ],
+)
+def test_context_words_match_as_prefixes(text, value, gated_type):
+    """Inflections and run-together field labels must open the gate.
+
+    Prefix matching is deliberate: three whole-word variants were tried, and
+    each lost some of these -- and a gate that fails to open leaves PII
+    unredacted. The accepted cost is over-detection ("Tina" opens the SSN
+    gate); see DECISIONS.md, 2026-10-03.
+    """
+    assert _labels(text).get(value) == gated_type
+
+
+def test_context_search_stays_linear_in_document_length():
+    """Each context window is searched within its bounds; unbounded, it is quadratic.
+
+    Without an ``endpos`` this input takes 6 s (0.02 s bounded) -- within the
+    200 KB request limit, a way to tie up a worker. The threshold is fifty
+    times the bounded time, so it fails on the quadratic version, not on a
+    slow runner.
+    """
+    import time
+
+    text = "Reference 123456789 filed. " * 4000
+    started = time.perf_counter()
+    DETERMINISTIC.detect(text)
+    assert time.perf_counter() - started < 1.0
+
+
+def _distances(text: str) -> dict[tuple[str, str], int | None]:
+    return {(c.entity_type, c.text): c.context_distance for c in DETERMINISTIC.detect(text)}
+
+
+@pytest.mark.parametrize("name", ["İlker Yılmaz", "İpek İnce-İnan", "İ" * 40])
+def test_a_letter_that_lowercases_to_two_characters_shifts_nothing(name):
+    """``"İ".lower()`` is two characters long.
+
+    The detector once searched ``text.lower()`` using offsets from ``text``,
+    so each such letter moved every later context window by one. The same
+    document with a plain "I" must produce identical candidates and distances.
+    """
+    tail = ", borrower. Taxpayer SSN 457551275, credit account 483920117."
+    plain = name.replace("İ", "I").replace("ı", "i")
+    assert len(plain) == len(name)
+    assert _distances(name + tail) == _distances(plain + tail)
+
+
 def test_nearest_context_word_decides_between_gated_types():
     assert _labels("Remit against loan number 0012345678 today.") == {
         "0012345678": "LOAN_NUMBER"

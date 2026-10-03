@@ -6,8 +6,10 @@ import json
 
 import pytest
 
+from app.core.arbitration import is_fragment
 from app.core.pipeline import Pipeline
 from app.core.taxonomy import load_taxonomy
+from app.core.types import ValidationStatus
 from app.detect.registry import build_detector
 from synth.providers import PROVIDERS
 
@@ -92,6 +94,22 @@ def test_rejection_rate_is_computable(pipeline):
     assert 0.0 <= result.rejection_rate <= 1.0
 
 
+def test_losing_an_overlap_is_not_a_rejection(pipeline):
+    """Was 0.333 here: overlap losers counted as validator rejections."""
+    result = pipeline.analyze(["Loan number 0012345678 and account 483920117."])[0]
+    assert result.dropped, "the premise needs an overlap loser"
+    assert all(e.validation_status is not ValidationStatus.FAIL for e in result.dropped)
+    assert result.rejection_rate == 0.0
+
+
+def test_rejection_rate_ignores_readings_with_no_validator(pipeline):
+    """One failed SSN, one passing PHONE; the tier-3 DATE has no validator."""
+    result = pipeline.analyze(["Taxpayer SSN 666121234, call (415) 555-0142 on 03/15/2024."])[0]
+    readings = [*result.entities, *result.dropped]
+    assert any(e.validation_status is ValidationStatus.NOT_APPLICABLE for e in readings)
+    assert result.rejection_rate == 0.5
+
+
 def test_entities_never_overlap(pipeline):
     for result in pipeline.analyze([SAMPLE]):
         spans = [(e.start, e.end) for e in result.entities]
@@ -126,3 +144,51 @@ def test_runs_over_the_frozen_corpus(pipeline):
     results = pipeline.analyze(texts, redact=True)
     assert all(r.entities for r in results)
     assert all(r.redacted != text for r, text in zip(results, texts, strict=False))
+
+
+def test_rejection_rate_is_counted_per_reading(pipeline):
+    """One string, two readings: a failed SSN and a passing account number.
+
+    Per string this would be 0.0, because the account reading survived, and
+    the failed SSN reading -- the drift signal -- would vanish.
+    """
+    result = pipeline.analyze(["Taxpayer SSN, credit to account 666121234 today."])[0]
+    assert result.rejection_rate == 0.5
+
+
+def test_a_fragment_is_not_a_rejection(pipeline):
+    """"0165" ends a valid phone number; it fails NMLS rules only as a piece of it."""
+    result = pipeline.analyze(["Questions: Daniel Nguyen at 713-555-0165, NMLS 7108420."])[0]
+    assert any(is_fragment(e) and e.validation_status is ValidationStatus.FAIL
+               for e in result.dropped), "the premise needs a failing fragment"
+    assert result.rejection_rate == 0.0
+
+
+def test_a_passing_orphan_counts_as_a_validated_reading(pipeline):
+    """A valid SSN dropped with a container that lost was still validated, and passed.
+
+    Leaving it out of the denominator while counting its failed sibling made
+    the rate 0.5 here instead of 1/3.
+    """
+    from app.core.arbitration import arbitrate
+    from app.core.pipeline import AnalysisResult
+    from app.core.types import Candidate
+
+    document = "Lot 078-05-1120 and 666-12-1234 Rd 12-3456789"
+
+    def at(entity_type, text):
+        start = document.index(text)
+        return Candidate.from_span(document=document, entity_type=entity_type, start=start,
+                                   end=start + len(text), score=1.0, source="test")
+
+    kept, dropped = arbitrate([
+        at("STREET_ADDRESS", "Lot 078-05-1120 and 666-12-1234 Rd 12"),
+        at("EIN", "12-3456789"),
+        at("SSN", "078-05-1120"),
+        at("SSN", "666-12-1234"),
+    ], TAXONOMY)
+    result = AnalysisResult(
+        request_id="t", taxonomy_version="t", engine={}, entities=kept, dropped=dropped,
+        counts_by_tier={}, counts_by_type={}, timing_ms={},
+    )
+    assert result.rejection_rate == 1 / 3

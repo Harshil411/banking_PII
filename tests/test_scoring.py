@@ -116,8 +116,12 @@ def test_macro_f1_ignores_types_with_no_gold_support():
 # --------------------------------------------------------------------------
 
 
-def _report(micro_f1=0.97, type_f1=0.95, support=40, rejection=1.0, claim=0.02, sha="abc"):
+def _report(
+    micro_f1=0.97, type_f1=0.95, support=40, rejection=1.0, claim=0.02, sha="abc",
+    engine="presidio",
+):
     return {
+        "engine": engine,
         "splits": {
             "held_out": {
                 "corpus": {"sha256": sha},
@@ -155,3 +159,63 @@ def test_gate_catches_micro_drop_rejection_drop_and_claim_rise():
 def test_gate_refuses_to_compare_different_corpora():
     failures = compare(_report(sha="new"), _report(sha="old"))
     assert failures and "corpus changed" in failures[0]
+
+
+def test_gate_refuses_to_compare_different_engines():
+    """The regex engine cannot find names; that is not a PERSON_NAME regression."""
+    current = _report(type_f1=0.0, engine="deterministic")
+    failures = compare(current, _report())
+    assert len(failures) == 1 and "not comparable (engine" in failures[0]
+    assert "LOAN_NUMBER" not in failures[0]
+
+
+def test_check_fails_fast_on_an_engine_mismatch(monkeypatch, capsys):
+    """Refused before evaluate() loads a model and scores both splits."""
+    import evaluation.__main__ as cli
+
+    def must_not_run(engine, taxonomy=None):
+        raise AssertionError("evaluate() ran before the engine check")
+
+    monkeypatch.setattr(cli, "evaluate", must_not_run)
+    assert cli.main(["--check", "--quiet", "--engine", "deterministic"]) == 1
+    assert "not comparable (engine" in capsys.readouterr().err
+
+
+def test_an_out_report_is_written_despite_an_engine_mismatch(monkeypatch, tmp_path):
+    """A requested --out report is wanted whatever the gate says."""
+    import evaluation.__main__ as cli
+
+    ran = []
+    monkeypatch.setattr(
+        cli, "evaluate", lambda engine, taxonomy=None: ran.append(engine) or {"engine": engine}
+    )
+    monkeypatch.setattr(cli, "compare", lambda current, baseline: ["stub"])
+    monkeypatch.setattr(cli, "_print", lambda report: None)
+    out = tmp_path / "report.json"
+    assert cli.main(["--check", "--engine", "deterministic", "--out", str(out)]) == 1
+    assert ran == ["deterministic"] and out.exists()
+
+
+def test_check_and_write_baseline_cannot_be_combined():
+    """Checking against a baseline this run just overwrote would always pass."""
+    import evaluation.__main__ as cli
+
+    with pytest.raises(SystemExit):
+        cli.main(["--check", "--write-baseline"])
+
+
+def test_gate_refuses_to_compare_different_taxonomy_versions():
+    """A different label space, even over an unchanged corpus, is not comparable."""
+    current, baseline = _report(type_f1=0.5), _report()
+    current["taxonomy_version"], baseline["taxonomy_version"] = "1.1.0", "1.0.0"
+    failures = compare(current, baseline)
+    assert len(failures) == 1 and "taxonomy_version 1.0.0 -> 1.1.0" in failures[0]
+
+
+def test_every_identity_field_is_recorded_in_a_report():
+    """The pre-flight check and the report build identity from one helper; pin that it is whole."""
+    import evaluation.__main__ as cli
+    from app.core.taxonomy import load_taxonomy
+
+    taxonomy = load_taxonomy(cli.ROOT / "taxonomy" / "entities.yaml")
+    assert set(cli._identity("presidio", taxonomy)) == set(cli.IDENTITY)

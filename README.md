@@ -135,7 +135,7 @@ asserts none of it reaches arbitration.
 
 ```bash
 make install        # .venv, dev dependencies, spaCy en_core_web_md
-make test           # 212 tests
+make test           # 267 tests
 make serve          # API + demo at http://localhost:8000
 make eval           # score both splits, per-type table
 ```
@@ -150,6 +150,9 @@ network at all:
 docker build -t mortgage-pii .
 docker run --network none -p 8000:8000 mortgage-pii
 ```
+
+CI builds and starts it this way on every push: 546 MB, ready 3 s after a cold
+start with networking disabled.
 
 ## API
 
@@ -228,8 +231,20 @@ documents, and drift. The latency in the report is in-process, one document at a
 time, on one laptop — not a service benchmark. The accessibility audit is
 automated plus a keyboard check; it has not had a screen-reader pass.
 
-**The container has never been built on the development machine**, which has no
-Docker. The Dockerfile and its CI job are written but unverified locally.
+**Two arbitration edge cases leave characters unredacted.** A reading that
+loses a *partial* overlap is dropped whole, so its characters outside the
+winner stay in the output; how often that happens has not been measured. And a
+valid value inside a longer match that itself lost an overlap is dropped with
+it — none of the 133 such fragments in either corpus is in that position, but
+real text could be. Both are recorded in `DECISIONS.md` (2026-10-03).
+
+**Arbitration is quadratic in the number of candidates.** A crafted 199 KB
+document takes 4.7 s, within the 200 KB request limit, so a public deployment
+needs that fixed or a tighter limit first.
+
+**The container is built only in CI**; the development machine has no Docker.
+At 546 MB it is over the 400 MB target set at the start, and where the size goes
+has not been broken down yet.
 
 English, US, one locale.
 
@@ -257,7 +272,7 @@ app/web/static/            the demo page, with self-hosted fonts
 synth/                     generator · templates/ (tuning) · templates_holdout/
 evaluation/                scoring, the baseline gate, baseline.json
 data/corpus/               frozen (tuning) and holdout corpora, committed with manifests
-tests/                     212 tests; fixtures/ holds externally sourced validator vectors
+tests/                     267 tests; fixtures/ holds externally sourced validator vectors
 tools/                     corpus check · sample picker · screenshot capture
 ```
 

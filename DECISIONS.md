@@ -367,3 +367,220 @@ Neither replaces a screen-reader pass, which has not been done.
 Rejected: reintroducing a component framework. The page is one screen of
 interaction; a build step would put Node into Docker and CI for no user-visible
 gain.
+
+## 2026-10-03 — Over-redaction merges overlapping spans instead of rejecting them
+
+A review found that `redact_failed_tier1=True` returned HTTP 500 on ordinary
+input. The cause was two correct rules meeting. Arbitration rule 2 takes a
+failed SSN out of contention so that an account number can claim the same
+digits; the anonymiser refuses overlapping spans because replacing both would
+garble the text. The over-redact policy handed it both. The tests passed only
+because every fixture for the flag had a failed SSN with nothing competing for
+its characters — the one shape the flag never meets in a real document.
+
+Three resolutions were considered. *Raise* is what it did, and makes the policy
+unusable. *Skip any failed span that overlaps something kept* fixes an exact
+overlap, but on a partial overlap it leaves the uncovered digits in the output,
+under the one policy whose purpose is never to do that. **Merge** was chosen:
+the failed tier-1 spans the policy adds are swept together with arbitration's
+output into non-overlapping regions, each covering the union of what overlaps.
+The overlap guard still applies, unchanged, to arbitration's own output; the
+exemption covers only the spans the policy adds.
+
+What a region becomes, as settled over three review passes:
+
+- **A region that is exactly one kept entity** is rewritten as it always was,
+  last-four masking included. With nothing else touching it, the policy
+  changes nothing.
+- **Every other region is never masked.** It contains a failed reading, and
+  its last four characters belong, or may belong, to a span a validator
+  rejected: "credit to account 666121234" beside an SSN label used to come out
+  as `*****1234`, four digits of what may be a mistyped SSN. That includes a
+  lone failed card, which becomes `[CARD]` rather than `…1112`.
+- **A token names a type for every character it replaces**, so a region is
+  typed only when that is true of all of it. A kept entity spanning the whole
+  region names it, whatever failed readings lie inside — arbitration's answer
+  outranks a rejected one, so a failed SSN exactly under a kept account gives
+  `[ACCOUNT]`. Otherwise one type shared by every member names it. Otherwise
+  it is `[REDACTED]`: a failed SSN running past the end of a kept address is
+  not an address, and two ZIPs bridged by a failed span are not one ZIP.
+  Joining the labels (`[ZIP][PHONE]`) was considered and rejected; it implies
+  a boundary between two values that the merged region does not have.
+
+A property test asserts that, for arbitrary candidates, exactly the characters
+no target touched survive. The output is assembled in one forward pass from
+slices of the untouched original, rather than by editing the string back to
+front as v1 did: equally offset-safe, and linear.
+
+What this does **not** cover, recorded rather than fixed: a *passing* reading
+that loses a partial overlap is dropped whole (arbitration rule 7), so any of
+its characters outside the winner stay in the output under every policy, this
+one included. That is older and broader than this change, and redacting
+overlap losers would change what the default policy does; it needs measuring
+before deciding.
+
+## 2026-10-03 — Rejection rate counts validator failures, and nothing else
+
+The response's `rejection_rate` was documented as the share of candidates a
+validator rejected, and computed as `dropped / (kept + dropped)`. But `dropped`
+also holds valid candidates that lost an overlap or were fragments of a longer
+match. "Loan number 0012345678 and account 483920117." reported 0.33 with no
+validation failure at all. This is the number pitched as the design's drift
+signal — rejections rise when the input moves, before label mix does — and as
+computed it tracked how densely number formats overlap instead.
+
+It is now failed readings over readings a validator ran on. Excluded from
+both halves: tier-3 readings, which have no validator, so including them would
+let a document with more names look like one with fewer rejections; and
+fragments of a longer match that survived, which are artefacts rather than
+readings — "0165" ending a valid phone number fails the NMLS rules only
+because it is a piece of something else, and that happens eleven times in the
+frozen corpus. The demo page draws the same line.
+Arbitration now also deduplicates failed readings, as it always did passing
+ones, so two detectors reporting one failure is one rejection for every
+consumer of `dropped`, not just this rate.
+
+It is counted **per reading, not per string**, and that was a choice. "Credit
+to account 666121234" beside an SSN label is one failed SSN reading and one
+passing account reading: 0.5. Counted per string it would be 0.0, because the
+account reading survived — and the failed SSN reading, which is precisely the
+signal worth watching, would disappear. The cost is that the denominator
+still grows with how many readings overlap a value. Per-type failure rates
+would remove that, and are the better metric to build when drift monitoring
+is built. The evaluation report's near-miss rejection rate is a different,
+gold-labelled measure and was not affected.
+
+The field's meaning changed without a version marker in the response. That
+was weighed and left: the service has never been deployed, so no stored
+series exists for the change to break. Once one does, a definition change
+like this needs a marker.
+
+## 2026-10-03 — How a fragment is reported depends on whether its container survived
+
+Arbitration sets aside a span strictly inside a longer validated match — the
+"2021" of a date, the "0165" ending a phone number — before ranking, because
+the shorter pattern would otherwise win on tier. But a container can still
+lose an overlap afterwards, and then nothing in the output covers the
+fragment's characters.
+
+**A fragment is an artefact if and only if a kept, pattern-derived entity
+strictly contains it**, and is named after that entity; a failed one keeps
+its validator's reason after that, so the arithmetic that rejected it is not
+lost (it used to be overwritten). Kept entities never
+overlap, so there is at most one, and the reason no longer depends on detector
+order as "the first container found" did; the order-independence property test
+now covers `dropped` and its reasons. Otherwise **a failed fragment is
+reported as an ordinary rejection**. It used to be reported as a fragment
+regardless, so a failed SSN inside an address that lost to an EIN was neither
+counted in the rejection rate nor redacted under the over-redact policy, and
+the demo called it a fragment of something not in the output. This changes
+only how a dropped reading is reported, never what is kept, so it cannot
+disturb precedence.
+
+Whether a *model* span may vouch for a fragment went back and forth in review,
+and the answer is no. Model spans are not trusted as containers anywhere in
+arbitration, and allowing one here made a failed SSN an artefact when an
+unrelated address candidate existed and a rejection when it did not.
+
+**A passing fragment that nothing kept contains is still dropped, and its
+characters still reach the output.** That predates this work, and the attempt
+to fix it here was withdrawn after review. Letting such orphans contend after
+the first ranking pass broke precedence in two reproduced ways: a tier-1 SSN
+orphan lost to a tier-3 name that had been kept only because the SSN was not
+yet competing, and nested fragments escaped the fragment rule, so the "2021"
+of an orphaned date outranked the date. "What would have won had the fragment
+not been set aside" is a fixpoint question; the right fix resolves fragments
+inside the single ranked pass, and belongs in its own change. Until then the
+reason says so plainly — "inside a longer STREET_ADDRESS match …, which lost
+an overlap; dropped with it", naming a container that actually contended — and
+the reading carries no fragment marker, so the rejection rate counts it as the
+validated, passing reading it is. None of the 133 fragments in either corpus
+has a container that lost, so no score moved either way.
+
+Fragment status reaches the rejection rate, the over-redact policy and the
+demo page through one helper, `is_rejection`, and on the page through a prefix
+of the reason text, which the page copies as a JavaScript constant and a test
+pins to the Python one. A structured `outcome` field on each dropped entity
+would be sturdier and was deferred rather than rejected: it changes the API
+schema that the page and any client read, which deserves its own change.
+
+## 2026-10-03 — Context words stay prefixes, knowingly
+
+Context words match as prefixes, so "tin" opens the SSN gate on "Tina" and
+"aba" opens the routing gate on "abandoned". A review flagged it, and three
+fixes were tried and reviewed in turn. Each traded that over-detection for
+misses on real labels:
+
+| Rule tried | What it lost |
+|---|---|
+| Whole-word, every context word | "Loans", "Remittance", "Deposited", "SS#457551275" |
+| Whole-word for words of ≤ 4 characters | "wired", "loaned", "noted", "ACCT_NO", "FICO8"; and quadratic search time, 6 s on 108 KB |
+| Whole-word for abbreviations (written in capitals) | "NMLSR ID" — the industry's standard originator label — "AcctNo", "SSNum", "FICOScore"; and "Abas", "Tins" still matched |
+
+The two sides are not symmetric. Over-detection redacts digits that were not
+the gated type; a miss leaves PII in the output. For a redactor the second is
+the failure that matters, so **prefix matching stays**, and "Tina" is a known,
+accepted over-detection. The first fix was also justified by "no context word
+occurs in either corpus as a prefix", which is the same blind spot as the
+original bug: the synthetic corpus cannot contain what its templates never
+wrote, so it measures neither side. Deciding this properly needs evaluation
+text with real field labels, inflections and names, which does not exist yet.
+Parametrised tests pin the recall side, and a timing test guards the bounded
+window search.
+
+## 2026-10-03 — Context matching reads the original text, with ASCII-only folding
+
+The detector lowercased the document and searched the copy using offsets from
+the original. Lowercasing is not length-preserving — `"İ"` becomes two
+characters — so the copy drifted one character per such letter, and a Turkish
+borrower name was enough to change a reported context distance, which is an
+arbitration tiebreak. Context words are now matched case-insensitively against
+the original. Rejected: keeping the lowercased copy with an offset map back to
+the original, which is more code to get wrong for the same result; and plain
+`re.IGNORECASE`, which was the first fix and folds Unicode lookalikes, so
+"ſſn" (long s) opened the SSN gate where lowercasing never had. The folding is
+scoped as `(?ai:...)`, ASCII-only, which keeps `\b` Unicode-aware so "éssn"
+still is not "ssn". Unlike prefix matching, neither change trades anything
+away. Scores on both corpora are byte-identical before and after: the
+synthetic names never contain these letters, which is why the evaluation could
+not have caught it.
+
+## 2026-10-03 — The gate compares like with like, or refuses
+
+The gate already refused a changed corpus. It now also refuses a different
+engine or taxonomy version. Scoring the regex-only engine against the presidio
+baseline used to report PERSON_NAME and CITY as collapsing — true, and not a
+regression — and a taxonomy bump over an unchanged corpus would have compared
+two label spaces. Rejected: reporting the per-type differences with a warning,
+because a gate that prints failures it does not mean teaches people to ignore
+it. One function holds the rule and both call sites ask it.
+
+A plain `--check` refuses before loading a model or scoring anything; with
+`--out` the report is written first, because it was asked for. `--check` and
+`--write-baseline` are now mutually exclusive. Together they compared a run
+with the baseline it had just written, which always passes; the alternative,
+comparing against the previous baseline before overwriting it, makes one
+command both record and judge, and recording a baseline is meant to be a
+separate, deliberate commit.
+
+## 2026-10-03 — Also from the review
+
+- **Package data is globbed recursively.** `web/static/*` built a wheel holding
+  `index.html` without its CSS, JavaScript, fonts or font licences. The Docker
+  image was unaffected, because it copies `app/` rather than installing it.
+- **Arbitration is quadratic in the number of candidates, and is not fixed
+  here.** The review measured 4.7 s for a crafted 199 KB document, within the
+  200 KB request limit, so the size limit does not bound worker time. (The
+  detector's window search was always bounded; a version written during this
+  review briefly was not, and a timing test now guards against that.) Both of its loops scan everything
+  kept so far; an interval structure would make them logarithmic. It predates
+  this work and touches the core ranking, so it is recorded for its own change.
+- **A multi-word context word shrinks its own window, and is not fixed here.**
+  The window search requires a context word to lie wholly inside it, so
+  "Social Security" 18 characters before an SSN opens no gate while "SSN" at
+  the same distance does. Starting the search earlier would fix it, and would
+  change context distances, which are an arbitration tiebreak; it predates
+  this work and needs measuring.
+- **The container was first built by CI on 2026-10-02**: 546 MB, ready 3 s
+  after a cold start with networking disabled. That is over the 400 MB the
+  plan set as a target, and where the size goes has not been broken down yet.

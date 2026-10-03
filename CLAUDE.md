@@ -29,7 +29,7 @@ rejected weakens the whole thing.
 
 ```bash
 make install          # .venv (Python 3.14 locally, 3.12 in the image), deps, spaCy model
-make test             # 212 tests, ~3s; `pytest -m "not slow"` skips spaCy-dependent ones
+make test             # 267 tests, ~3s; `pytest -m "not slow"` skips spaCy-dependent ones
 make lint             # ruff over app synth evaluation tests tools
 make serve            # API + demo at http://localhost:8000
 make eval             # score both splits
@@ -73,7 +73,20 @@ equally strong either — Luhn excludes ~90% of digit strings, the SSA rules onl
 - **Patterns are authored in scanner form only.** The anchored validator form is
   derived at load time; authoring both is how they drift apart.
 - **Arbitration output is pairwise non-overlapping and sorted.** `anonymize`
-  depends on it and raises if violated.
+  depends on it and raises if violated. The failed tier-1 spans that
+  `redact_failed_tier1` adds overlap it *by design* (arbitration rule 2 frees
+  their characters for another type) and are merged into regions, never fed to
+  the guard — doing so was a 500 on ordinary input.
+- **Never index one string with another's offsets.** `str.lower()` is not
+  length-preserving (`"İ"` becomes two characters); match the original with
+  ASCII-scoped case folding, `(?ai:...)`. Plain `re.IGNORECASE` also folds
+  Unicode lookalikes (`"ſſn"` matches `ssn`).
+- **Context words are prefixes, knowingly.** "tin" matching "Tina" is an
+  accepted over-detection; three whole-word variants each lost real labels
+  ("NMLSR ID", "wired", "AcctNo"). The synthetic corpus measures neither side.
+  Read `DECISIONS.md` (2026-10-03) before changing it.
+- **The context-window search is bounded at both ends.** Without the `endpos`
+  each window scans to the end of the document: quadratic, 6 s on 108 KB.
 - **Every tiebreak must be deterministic.** A frozen evaluation set whose diffs
   shuffle is not a regression gate.
 - **No module-level mutable state.** The eval harness must import the pipeline
@@ -140,8 +153,10 @@ bugs.
 
 ## Not yet built
 
-HTTP throughput under concurrency, cost per 1,000 documents, and PSI drift are
-unmeasured; the report's latency is in-process only. Docker has never been built
-on this machine — the Dockerfile and its CI job are unverified locally. The
+Arbitration is O(n²) in candidates: a crafted 199 KB document takes 4.7 s, so
+the request-size limit does not bound worker time. HTTP throughput under
+concurrency, cost per 1,000 documents, and PSI drift are unmeasured; the report's latency is in-process only. There is no Docker on this
+machine; the image is built and started only in CI (546 MB, over the 400 MB
+target; ready 3 s cold with no network). The
 demo has passed axe-core (WCAG 2.2 AA) and a keyboard check, not a screen-reader
 pass.

@@ -25,7 +25,8 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from app.core.arbitration import arbitrate, validate
+from app.core.anonymize import RedactionPolicy, anonymize
+from app.core.arbitration import arbitrate, is_fragment, is_rejection, validate
 from app.core.taxonomy import load_taxonomy
 from app.core.types import Candidate, Tier, ValidationStatus
 from synth.providers import PROVIDERS
@@ -84,14 +85,19 @@ def test_kept_entities_are_sorted(items):
 @given(candidates)
 @SLOW
 def test_arbitration_is_order_independent(items):
-    """Shuffling detector output must not change the answer."""
-    expected, _ = arbitrate(items, TAXONOMY)
+    """Shuffling detector output must not change the answer -- kept or dropped.
+
+    ``dropped`` is checked with its reasons: which container a fragment is
+    named after, and which duplicate survives, must not follow detector order.
+    """
+    expected = arbitrate(items, TAXONOMY)
     shuffled = list(items)
     random.Random(1234).shuffle(shuffled)
-    actual, _ = arbitrate(shuffled, TAXONOMY)
-    assert [(e.entity_type, e.start, e.end) for e in expected] == [
-        (e.entity_type, e.start, e.end) for e in actual
-    ]
+    actual = arbitrate(shuffled, TAXONOMY)
+    for want, got in zip(expected, actual, strict=True):
+        assert [(e.entity_type, e.start, e.end, e.reason) for e in want] == [
+            (e.entity_type, e.start, e.end, e.reason) for e in got
+        ]
 
 
 @given(candidates)
@@ -272,3 +278,125 @@ def test_tier_one_types_always_produce_a_verdict(entity_type):
     entity = validate(_candidate(entity_type, 5, 15), TAXONOMY)
     assert entity.validation_status in (ValidationStatus.PASS, ValidationStatus.FAIL)
     assert entity.validator is not None
+
+
+def test_a_failure_two_detectors_report_is_dropped_once():
+    """Two sources proposing the same failed reading are one rejection, not two."""
+    document = "Taxpayer SSN 666121234 on file."
+    candidates = [
+        Candidate.from_span(document=document, entity_type="SSN", start=13, end=22,
+                            score=1.0, source=source)
+        for source in ("deterministic", "presidio")
+    ]
+    _, dropped = arbitrate(candidates, TAXONOMY)
+    assert [(e.entity_type, e.validation_status) for e in dropped] == [
+        ("SSN", ValidationStatus.FAIL)
+    ]
+    assert arbitrate(list(reversed(candidates)), TAXONOMY)[1] == dropped
+
+
+def _span(document: str, entity_type: str, text: str, occurrence: int = 0) -> Candidate:
+    start = -1
+    for _ in range(occurrence + 1):
+        start = document.index(text, start + 1)
+    return Candidate.from_span(document=document, entity_type=entity_type, start=start,
+                               end=start + len(text), score=1.0, source="test")
+
+
+def test_a_failed_fragment_whose_container_lost_is_a_rejection():
+    """The address holding the failed SSN loses to the EIN; nothing covers the SSN now.
+
+    Treated as a fragment, it was neither counted as a rejection nor redacted
+    under the over-redact policy -- the digits stayed in the output.
+    """
+    document = "Mail 666-12-3456 Elm Road 12-3456789"
+    kept, dropped = arbitrate([
+        _span(document, "SSN", "666-12-3456"),
+        _span(document, "STREET_ADDRESS", "666-12-3456 Elm Road 12"),
+        _span(document, "EIN", "12-3456789"),
+    ], TAXONOMY)
+    assert [e.entity_type for e in kept] == ["EIN"]
+    ssn = next(e for e in dropped if e.entity_type == "SSN")
+    assert ssn.validation_status is ValidationStatus.FAIL
+    assert "fragment" not in ssn.reason
+
+    over = anonymize(document, kept, RedactionPolicy(redact_failed_tier1=True), dropped=dropped)
+    assert over == "Mail [SSN] Elm Road [EIN]"
+
+
+def test_a_passing_fragment_whose_container_lost_says_so():
+    """A known gap: a valid SSN inside an address that lost is still dropped.
+
+    Letting it contend after the first pass broke precedence, so it is
+    reported honestly instead, and recorded in DECISIONS.md as a limitation.
+    It is not an artefact: no fragment marker, and it counts as a validated
+    reading in the rejection rate.
+    """
+    document = "Ref 457-55-1275 Oak Road 12-3456789"
+    kept, dropped = arbitrate([
+        _span(document, "SSN", "457-55-1275"),
+        _span(document, "STREET_ADDRESS", "457-55-1275 Oak Road 12"),
+        _span(document, "EIN", "12-3456789"),
+    ], TAXONOMY)
+    assert [e.entity_type for e in kept] == ["EIN"]
+    ssn = next(e for e in dropped if e.entity_type == "SSN")
+    assert ssn.reason == (
+        "inside a longer STREET_ADDRESS match '457-55-1275 Oak Road 12', "
+        "which lost an overlap; dropped with it"
+    )
+    assert not is_fragment(ssn)
+
+
+def test_an_orphan_is_named_after_a_container_that_contended():
+    """ZIP sits in a PHONE that is itself a fragment of the address; only the address lost."""
+    document = "12 Oak Rd 2127360187 Unit 12-3456789"
+    phone = document.index("2127360187")
+    kept, dropped = arbitrate([
+        _at(document, "STREET_ADDRESS", 0, document.index("Unit") + 7),
+        _at(document, "PHONE", phone, phone + 10),
+        _at(document, "ZIP", phone, phone + 5),
+        _span(document, "EIN", "12-3456789"),
+    ], TAXONOMY)
+    assert [e.entity_type for e in kept] == ["EIN"]
+    zip_code = next(e for e in dropped if e.entity_type == "ZIP")
+    assert zip_code.reason.startswith("inside a longer STREET_ADDRESS match")
+
+
+def test_a_fragment_inside_a_surviving_container_stays_a_fragment():
+    document = "Questions: 713-555-0165, NMLS 7108420."
+    kept, dropped = arbitrate([
+        _span(document, "PHONE", "713-555-0165"),
+        _span(document, "NMLS_ID", "0165"),
+    ], TAXONOMY)
+    assert [e.entity_type for e in kept] == ["PHONE"]
+    (fragment,) = dropped
+    assert fragment.reason.startswith("fragment of a longer PHONE match '713-555-0165'; ")
+    assert "on its own it fails: " in fragment.reason, "the validator's arithmetic is kept"
+
+
+def _at(document: str, entity_type: str, start: int, end: int) -> Candidate:
+    return Candidate.from_span(document=document, entity_type=entity_type, start=start,
+                               end=end, score=1.0, source="test")
+
+
+def test_a_model_span_does_not_vouch_for_a_failed_fragment():
+    """The address holding the failed SSN loses to a longer, model-carried CITY.
+
+    Model spans are not containers anywhere in arbitration. Counting the CITY
+    as cover would make the SSN an artefact here but a rejection in the same
+    text without the address candidate; it is a rejection in both.
+    """
+    document = "Ref Oak 666121234 Road Springfield end"
+    ssn = document.index("666121234")
+    kept, dropped = arbitrate([
+        _at(document, "SSN", ssn, ssn + 9),
+        _at(document, "STREET_ADDRESS", ssn - 4, ssn + 14),
+        _at(document, "CITY", 0, ssn + 26),
+    ], TAXONOMY)
+    assert [e.entity_type for e in kept] == ["CITY"]
+    with_address = next(e for e in dropped if e.entity_type == "SSN")
+    _, alone = arbitrate([
+        _at(document, "SSN", ssn, ssn + 9),
+        _at(document, "CITY", 0, ssn + 26),
+    ], TAXONOMY)
+    assert is_rejection(with_address) and is_rejection(alone[0])

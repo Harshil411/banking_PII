@@ -5,9 +5,10 @@ that could be an instance of the type -- and the validators' job is precision.
 A scanner that encodes its own correctness rules makes those rules unreachable
 and hides near-misses from the validator that exists to reject them.
 
-Context gating is the exception. A few types (LOAN_NUMBER, NMLS_ID,
-CREDIT_SCORE) have patterns so broad that running them unguarded would claim
-most of the numbers on a servicing page. For those the taxonomy declares
+Context gating is the exception. Some types have patterns so broad that
+running them unguarded would claim most of the numbers on a servicing page:
+LOAN_NUMBER, NMLS_ID and CREDIT_SCORE, and also SSN, ABA_ROUTING and
+US_ACCOUNT_NUM, whose patterns all match a bare nine-digit run. For those the taxonomy declares
 ``context_words``, and a candidate is only emitted when one appears nearby.
 """
 
@@ -46,10 +47,29 @@ class DeterministicDetector:
         # wire instruction in the corpus and, being tier 1, then won the span
         # from ABA_ROUTING: measured SSN precision 0.236, ABA recall 0.022.
         #
+        # Matched case-insensitively against the original text, never against
+        # ``text.lower()``. Lowercasing is not length-preserving -- "İ" becomes
+        # "i" plus a combining dot -- so a lowercased copy indexed with the
+        # original's offsets drifts by one character per such letter, and a
+        # Turkish borrower name moved every context window after it.
+        #
+        # The case folding is ASCII-only, scoped with ``(?ai:...)``. Plain
+        # re.IGNORECASE folds Unicode lookalikes too -- "ſſn" (long s) would
+        # match "ssn" and gate in a tier-1 SSN -- which lowercasing never did.
+        # The scope leaves ``\b`` Unicode-aware, so "éssn" is still not "ssn".
+        #
+        # Context words match as *prefixes*, deliberately. "remit" must cover
+        # "remittance", "wire" must cover "wired", "nmls" must cover "NMLSR
+        # ID", and a gate that fails to open leaves PII unredacted. The cost
+        # is over-detection: "tin" opens the SSN gate on "Tina", "aba" the
+        # routing gate on "abandoned". Three whole-word variants were tried
+        # and reviewed; each traded that for misses on real labels. See
+        # DECISIONS.md (2026-10-03) before changing this.
+        #
         # Compiled once per type rather than per match per document.
         self._context: dict[str, re.Pattern[str]] = {
             name: re.compile(
-                "|".join(rf"\b{re.escape(word.lower())}" for word in spec.context_words)
+                "|".join(rf"\b(?ai:{re.escape(word)})" for word in spec.context_words)
             )
             for name, spec in taxonomy.entities.items()
             if spec.context_words
@@ -60,7 +80,6 @@ class DeterministicDetector:
 
     def detect(self, text: str, entity_types: set[str] | None = None) -> list[Candidate]:
         candidates: list[Candidate] = []
-        lowered = text.lower()
 
         for name in self._taxonomy.scannable:
             if entity_types is not None and name not in entity_types:
@@ -74,7 +93,7 @@ class DeterministicDetector:
                     continue
                 distance: int | None = None
                 if context is not None:
-                    distance = self._context_distance(lowered, start, end, context)
+                    distance = self._context_distance(text, start, end, context)
                     if distance is None:
                         continue
                 candidates.append(
@@ -92,7 +111,7 @@ class DeterministicDetector:
         return candidates
 
     def _context_distance(
-        self, lowered_text: str, start: int, end: int, context: re.Pattern[str]
+        self, text: str, start: int, end: int, context: re.Pattern[str]
     ) -> int | None:
         """Characters to the nearest context word, or None if there is none.
 
@@ -102,10 +121,13 @@ class DeterministicDetector:
         describing it.
         """
         window_start = max(0, start - self._context_window)
-        window_end = min(len(lowered_text), end + self._context_window)
+        window_end = min(len(text), end + self._context_window)
 
+        # The search is bounded at both ends of the window. Without the
+        # ``endpos``, a window holding no context word scans on to the end of
+        # the document, which is quadratic: 6 s on 108 KB.
         best: int | None = None
-        for match in context.finditer(lowered_text, window_start, window_end):
+        for match in context.finditer(text, window_start, window_end):
             if match.end() <= start:
                 gap = start - match.end()
             elif match.start() >= end:

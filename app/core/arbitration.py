@@ -67,6 +67,25 @@ from app.core.types import Candidate, Entity, Tier, ValidationStatus
 #: Reason recorded when a candidate loses an overlap rather than a validation.
 OVERLAP_REASON = "overlapped by a higher-precedence entity: {winner} [tier {tier}] {span}"
 
+#: Start of the reason recorded for a fragment of a longer match. A fragment is
+#: an artefact of a shorter pattern, not a reading of the document, so
+#: consumers that count readings -- the rejection rate -- leave it out.
+FRAGMENT_REASON = "fragment of a longer "
+
+
+#: Start of the reason recorded for a passing fragment dropped along with a
+#: container that lost an overlap. It never contended, so it was not outranked.
+ORPHAN_REASON = "inside a longer "
+
+
+def is_fragment(entity: Entity) -> bool:
+    return entity.reason is not None and entity.reason.startswith(FRAGMENT_REASON)
+
+
+def is_rejection(entity: Entity) -> bool:
+    """A reading a validator rejected in its own right -- not an artefact of a longer match."""
+    return entity.validation_status is ValidationStatus.FAIL and not is_fragment(entity)
+
 
 def validate(candidate: Candidate, taxonomy: Taxonomy) -> Entity:
     """Run the candidate's validator, if its type has one."""
@@ -121,57 +140,64 @@ def _precedence(entity: Entity, taxonomy: Taxonomy) -> tuple:
     )
 
 
+def _is_container(entity: Entity, taxonomy: Taxonomy) -> bool:
+    """Pattern-derived and not failed: evidence that its characters form one value.
+
+    Model-carried spans are not trustworthy as containers -- spaCy routinely
+    returns a LOCATION that swallows a following ZIP, and letting those absorb
+    validated entities measured worse (micro-F1 0.945 against 0.948).
+    """
+    return (
+        not taxonomy[entity.entity_type].is_model_carried
+        and entity.validation_status is not ValidationStatus.FAIL
+    )
+
+
 def _drop_fragments(
     entities: list[Entity], taxonomy: Taxonomy
 ) -> tuple[list[Entity], list[Entity]]:
-    """Remove spans strictly inside a longer, pattern-derived, validated span.
+    """Set aside spans strictly inside a longer, pattern-derived, validated span.
 
     "10/13/2021" is a well-formed DATE; the "2021" inside it is not separately
     an NMLS identifier, even though NMLS_ID is tier 2 and DATE is tier 3 and
     tier normally decides first. A fragment of a longer pattern match is an
     artefact of the shorter pattern, not independent evidence.
 
-    Restricted to pattern-derived containers on purpose. Model-carried spans
-    are not trustworthy as containers -- spaCy routinely returns a LOCATION
-    that swallows a following ZIP, and letting those absorb validated entities
-    measured worse (micro-F1 0.945 against 0.948).
+    How each fragment is reported is decided after ranking, in ``arbitrate``:
+    a container can still lose an overlap.
     """
-    containers = [
-        e
-        for e in entities
-        if not taxonomy[e.entity_type].is_model_carried
-        and e.validation_status is not ValidationStatus.FAIL
-    ]
+    containers = [e for e in entities if _is_container(e, taxonomy)]
     kept, fragments = [], []
     for entity in entities:
-        swallowed = next(
-            (c for c in containers if c is not entity and _contains(c, entity)),
-            None,
-        )
-        if swallowed is None:
-            kept.append(entity)
+        if any(_contains(c, entity) for c in containers):
+            fragments.append(entity)
         else:
-            fragments.append(
-                replace(
-                    entity,
-                    reason=(
-                        f"fragment of a longer {swallowed.entity_type} match "
-                        f"{swallowed.text!r}"
-                    ),
-                )
-            )
+            kept.append(entity)
     return kept, fragments
 
 
-def _dedupe(entities: list[Entity]) -> list[Entity]:
-    """Collapse candidates identical in type and span, keeping the best-scored."""
-    best: dict[tuple[str, int, int], Entity] = {}
+def _dedupe(entities: list[Entity], taxonomy: Taxonomy) -> list[Entity]:
+    """Collapse readings identical in type and span to one.
+
+    The survivor is the best by the same total ordering arbitration uses, then
+    by source, pattern and reason, so it never depends on the order detectors
+    ran in -- not
+    even when two readings tie on score but differ in context distance, which
+    is itself a precedence component. An incomplete key is how
+    order-dependence gets in.
+    """
+    best: dict[tuple[str, int, int], tuple[tuple, Entity]] = {}
     for entity in entities:
-        key = (entity.entity_type, entity.start, entity.end)
-        current = best.get(key)
-        if current is None or entity.score > current.score:
-            best[key] = entity
-    return list(best.values())
+        span = (entity.entity_type, entity.start, entity.end)
+        rank = (
+            _precedence(entity, taxonomy),
+            entity.source,
+            entity.pattern_name or "",
+            entity.reason or "",
+        )
+        if span not in best or rank < best[span][0]:
+            best[span] = (rank, entity)
+    return [entity for _, entity in best.values()]
 
 
 def arbitrate(
@@ -181,19 +207,23 @@ def arbitrate(
     """Validate, resolve overlaps, and return ``(kept, dropped)``.
 
     ``kept`` is sorted by position and is guaranteed pairwise non-overlapping,
-    which is what makes anonymisation safe. ``dropped`` carries every candidate
-    that did not survive, each with the reason -- a failed checksum, or the
-    entity that outranked it.
+    which is what makes anonymisation safe. ``dropped`` carries every distinct
+    reading that did not survive -- one entry per type and span, however many
+    detectors proposed it -- each with the reason: a failed check, the entity
+    that outranked it, or the longer match it was a fragment of.
     """
     validated = [validate(candidate, taxonomy) for candidate in candidates]
     validated, fragments = _drop_fragments(validated, taxonomy)
 
     # Rule 2: validation failures leave contention immediately. They are
     # reported, but they must not shadow a weaker reading of the same span.
-    contenders = _dedupe([e for e in validated if e.validation_status is not ValidationStatus.FAIL])
-    dropped = [e for e in validated if e.validation_status is ValidationStatus.FAIL] + fragments
+    contenders = _dedupe(
+        [e for e in validated if e.validation_status is not ValidationStatus.FAIL], taxonomy
+    )
+    failures = [e for e in validated if e.validation_status is ValidationStatus.FAIL]
 
     kept: list[Entity] = []
+    dropped: list[Entity] = []
     for entity in sorted(contenders, key=lambda e: _precedence(e, taxonomy)):
         winner = next((k for k in kept if k.overlaps(entity)), None)
         if winner is None:
@@ -209,6 +239,65 @@ def arbitrate(
                 ),
             )
         )
+
+    # How a fragment is *reported* depends on what was kept; whether it is
+    # kept does not -- fragments never contend.
+    #
+    # If a kept container strictly contains it, its characters belong to that
+    # validated value and it is an artefact, named after it. Kept entities
+    # never overlap, so there is at most one, and the reason cannot depend on
+    # detector order. Model-carried spans do not count, here as anywhere else
+    # a container is meant: otherwise a failed SSN's classification would
+    # depend on whether an unrelated address candidate had happened to exist.
+    #
+    # Otherwise nothing kept vouches for its characters. A failed one is then
+    # a rejection in its own right: reported as a fragment, a failed SSN
+    # inside an address that lost to an EIN was neither counted in the
+    # rejection rate nor redacted by the over-redact policy.
+    #
+    # A *passing* one is still dropped, and its characters reach the output.
+    # That predates this rule and is recorded in DECISIONS.md: letting it
+    # contend after the first pass broke precedence (a tier-1 orphan lost to a
+    # tier-3 winner it outranks), and a correct rule needs fragments resolved
+    # inside the single ranked pass. It is not an artefact, so it is reported
+    # without the fragment marker and counts as the validated reading it is.
+    artefacts: list[Entity] = []
+    for fragment in fragments:
+        cover = next(
+            (k for k in kept if _is_container(k, taxonomy) and _contains(k, fragment)), None
+        )
+        if cover is not None:
+            reason = f"{FRAGMENT_REASON}{cover.entity_type} match {cover.text!r}"
+            # Keep the arithmetic: rule 2 promises a failure is reported with
+            # what rejected it, and a fragment's failure is still evidence.
+            if fragment.validation_status is ValidationStatus.FAIL and fragment.reason:
+                reason += f"; on its own it fails: {fragment.reason}"
+            artefacts.append(replace(fragment, reason=reason))
+        elif fragment.validation_status is ValidationStatus.FAIL:
+            failures.append(fragment)
+        else:
+            # Named after a container that contended and lost -- never one that
+            # was itself a fragment, which did not contend. The outermost
+            # container of any nesting is one, so this is never empty.
+            holder = min(
+                (c for c in validated if _is_container(c, taxonomy) and _contains(c, fragment)),
+                key=lambda c: _precedence(c, taxonomy),
+            )
+            artefacts.append(
+                replace(
+                    fragment,
+                    reason=(
+                        f"{ORPHAN_REASON}{holder.entity_type} match {holder.text!r}, which "
+                        "lost an overlap; dropped with it"
+                    ),
+                )
+            )
+
+    # Failures and fragments are deduplicated as contenders are: two detectors
+    # proposing the same failed reading is one rejection, and every consumer
+    # of ``dropped`` -- the demo's counts, the rejection rate -- would
+    # otherwise count it twice, in an order that depended on which ran first.
+    dropped += _dedupe(failures, taxonomy) + _dedupe(artefacts, taxonomy)
 
     kept.sort(key=lambda e: (e.start, e.end))
     dropped.sort(key=lambda e: (e.start, e.end, e.entity_type))

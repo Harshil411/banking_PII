@@ -13,7 +13,9 @@ dynamic = ["dependencies"]
 packages = ["app", "app.api", "app.core", "app.detect", "app.validate", "synth", "evaluation"]
 
 [tool.setuptools.package-data]
-app = ["web/static/*"]
+# Recursive: the page needs assets/ (CSS, JS, fonts), and the OFL licence files
+# must travel with the fonts. "web/static/*" shipped index.html alone.
+app = ["web/static/**/*"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }

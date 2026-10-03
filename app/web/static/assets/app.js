@@ -74,6 +74,16 @@ async function getJSON(url, options) {
   return response.json();
 }
 
+// Must equal FRAGMENT_REASON in app/core/arbitration.py; test_demo_page.py
+// asserts it. A fragment lies inside a longer validated match: an artefact of
+// the shorter pattern, not a reading the validator rejected.
+const FRAGMENT = "fragment of a longer ";
+// Must equal ORPHAN_REASON: a passing fragment dropped with a container that
+// lost. It never competed, so "Outranked" would contradict its own reason.
+const ORPHAN = "inside a longer ";
+const isFragment = (d) => typeof d.reason === "string" && d.reason.startsWith(FRAGMENT);
+const isRejection = (d) => d.validation_status === "fail" && !isFragment(d);
+
 // ------------------------------------------------------------------ segments
 //
 // Pure: turns the source text plus server-reported spans into an ordered list
@@ -84,7 +94,9 @@ export function segments(text, entities, dropped) {
   const kept = [...entities].sort((a, b) => a.start - b.start || a.end - b.end);
 
   // Spans a validator rejected are drawn too, so a near-miss is visible in the
-  // document -- unless a kept entity already occupies those characters.
+  // document -- unless a kept entity already occupies those characters. That
+  // condition also excludes fragments: the server marks a reading a fragment
+  // only when a kept entity strictly contains it, so it always overlaps one.
   const failed = dropped
     .filter((d) => d.validation_status === "fail" && !kept.some((k) => overlaps(k, d)))
     .sort((a, b) => a.start - b.start || a.tier - b.tier);
@@ -227,7 +239,7 @@ async function analyze() {
 
 function renderResult() {
   const r = state.result;
-  const failedChecks = r.dropped.filter((d) => d.validation_status === "fail").length;
+  const failedChecks = r.dropped.filter(isRejection).length;
   $("#summary").replaceChildren(
     el("strong", { text: r.entities.length }), " entities · ",
     el("strong", { text: failedChecks }), " failed a check · ",
@@ -304,8 +316,11 @@ function statusBadge(entity, rejected) {
 }
 
 function outcomeOf(candidate) {
+  if (isFragment(candidate)) return { cls: "outranked", icon: ICON.outranked, label: "Fragment" };
+  if (candidate.reason?.startsWith(ORPHAN)) {
+    return { cls: "outranked", icon: ICON.outranked, label: "Dropped with its match" };
+  }
   if (candidate.validation_status === "fail") return { cls: "fail", icon: ICON.rej, label: "Failed check" };
-  if (candidate.reason.startsWith("fragment")) return { cls: "outranked", icon: ICON.outranked, label: "Fragment" };
   return { cls: "outranked", icon: ICON.outranked, label: "Outranked" };
 }
 
@@ -360,7 +375,7 @@ function renderBreakdown() {
     bar.append(part);
   });
 
-  const failed = r.dropped.filter((d) => d.validation_status === "fail").length;
+  const failed = r.dropped.filter(isRejection).length;
   const row = (key, label, value) =>
     el("div", { class: "stat-row" }, el("dt", {}, key ? el("span", { class: `key ${key}` }) : null, label), el("dd", { text: value }));
 

@@ -20,9 +20,14 @@ import uuid
 from dataclasses import dataclass, field
 
 from app.core.anonymize import RedactionPolicy, anonymize
-from app.core.arbitration import arbitrate, counts_by_tier, counts_by_type
+from app.core.arbitration import (
+    arbitrate,
+    counts_by_tier,
+    counts_by_type,
+    is_fragment,
+)
 from app.core.taxonomy import Taxonomy
-from app.core.types import Entity
+from app.core.types import Entity, ValidationStatus
 from app.detect.base import Detector
 
 
@@ -48,9 +53,32 @@ class AnalysisResult:
         design makes available and label-mix PSI does not: a sudden rise in
         validator rejections says the input distribution moved before any
         label distribution has visibly shifted.
+
+        The numerator is readings whose validator returned FAIL, and nothing
+        else. ``dropped`` also holds valid readings that lost an overlap;
+        counting those *as rejections* made the rate 0.33 on a sentence where
+        nothing failed validation. Fragments of a longer match are left out of
+        both halves: "0165" at the end of a valid phone number fails the NMLS
+        rules only because it is a piece of something else.
+
+        The denominator is every reading a validator ran on, kept or dropped,
+        passing or failing. Tier-3 readings have no validator and would only
+        dilute it. Counting per reading rather than per string is a choice:
+        "credit account 666121234" near an SSN context word is one failed SSN
+        reading and one passing account reading, so 0.5. Per string it would
+        be 0.0, because the account reading survived -- and the failed SSN
+        reading, which is the drift signal, would vanish. The cost is that the
+        denominator still grows with how many readings overlap a value; per-type
+        failure rates would remove that, and are the better metric to build
+        when drift monitoring is built.
         """
-        considered = len(self.entities) + len(self.dropped)
-        return len(self.dropped) / considered if considered else 0.0
+        validated = [
+            e
+            for e in (*self.entities, *self.dropped)
+            if e.validation_status is not ValidationStatus.NOT_APPLICABLE and not is_fragment(e)
+        ]
+        failed = sum(e.validation_status is ValidationStatus.FAIL for e in validated)
+        return failed / len(validated) if validated else 0.0
 
 
 @dataclass(slots=True)

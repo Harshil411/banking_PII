@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import glob
 import json
 import re
+import tomllib
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
+from app.core.arbitration import FRAGMENT_REASON, ORPHAN_REASON
 from app.main import STATIC_DIR, create_app
+
+from .conftest import REPO_ROOT
 
 ASSETS = STATIC_DIR / "assets"
 HTML = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
@@ -238,3 +244,41 @@ def test_distractors_are_left_unmarked(client):
 
 def test_json_is_valid():
     json.loads((ASSETS / "samples.json").read_text(encoding="utf-8"))
+
+
+def test_package_data_ships_every_static_file():
+    """A wheel must carry assets/, not just index.html.
+
+    ``web/static/*`` matched only the top level, so an installed package served
+    the page and 404'd its CSS, JavaScript and fonts -- and left out the OFL
+    licence files that must accompany the fonts. setuptools expands these
+    patterns with ``glob(recursive=True)`` relative to the package, as here.
+    """
+    config = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    package = REPO_ROOT / "app"
+    shipped = {
+        Path(match).resolve()
+        for pattern in config["tool"]["setuptools"]["package-data"]["app"]
+        for match in glob.glob(str(package / pattern), recursive=True)
+        if Path(match).is_file()
+    }
+    static = package / "web" / "static"
+    # Dotfiles (a Finder .DS_Store) are skipped by setuptools' glob, and should be.
+    on_disk = {
+        p.resolve()
+        for p in static.rglob("*")
+        if p.is_file() and not any(part.startswith(".") for part in p.relative_to(static).parts)
+    }
+    assert on_disk, "the premise needs static files"
+    assert on_disk - shipped == set()
+
+
+def test_the_page_recognises_fragments_by_the_servers_marker():
+    """The page tells a fragment from a rejection by the reason's prefix.
+
+    That is a string shared across two languages, so it is pinned here: if
+    FRAGMENT_REASON is reworded, the page would count fragments as failed
+    checks again while the API's rejection rate does not.
+    """
+    assert f'const FRAGMENT = "{FRAGMENT_REASON}";' in JS
+    assert f'const ORPHAN = "{ORPHAN_REASON}";' in JS
